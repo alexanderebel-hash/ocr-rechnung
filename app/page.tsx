@@ -803,13 +803,13 @@ export default function Home() {
         </section>
 
         {/* Bewilligte Leistungen Section */}
-        <section className="glass-card rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 print:hidden animate-fade-in">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 tracking-tight">
+        <section className="frosted-glass rounded-3xl p-8 sm:p-12 mb-12 print:hidden animate-fade-in">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-8 text-center">
             Schritt 2: Bewilligte Leistungen
           </h2>
 
         <div className="mb-6">
-          <p className="text-sm text-gray-600 mb-3">
+          <p className="text-sm text-gray-300 mb-3">
             <strong>Option A:</strong> Excel-Datei hochladen
           </p>
 
@@ -878,7 +878,7 @@ export default function Home() {
         </div>
 
         <div>
-          <p className="text-sm text-gray-600 mb-3">
+          <p className="text-sm text-gray-300 mb-3">
             <strong>Option B:</strong> Manuell eingeben
           </p>
 
@@ -970,7 +970,7 @@ export default function Home() {
             </h3>
 
             <div className="mb-6">
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-sm text-gray-300 mb-3">
                 <strong>Optional:</strong> Medifox-PDF hochladen
               </p>
               
@@ -1015,7 +1015,7 @@ export default function Home() {
             </div>
 
             <div>
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-sm text-gray-300 mb-3">
                 <strong>Rechnungspositionen aus Medifox (wie erbracht):</strong>
               </p>
               
