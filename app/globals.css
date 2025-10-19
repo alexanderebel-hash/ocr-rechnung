@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* German Invoice Design Tokens */
+  /* Page dimensions */
+  --page-w: 210mm;
+  --page-h: 297mm;
+
+  /* Margins */
+  --m-left: 21mm;
+  --m-right: 16mm;
+  --m-top: 48mm;
+  --m-bottom: 6mm;
+
+  /* Font sizes */
+  --fs-xs: 8pt;
+  --fs-s: 9pt;
+  --fs-m: 10pt;
+  --fs-l: 12pt;
+
+  /* Line heights */
+  --lh-s: 11pt;
+  --lh-m: 12.7pt;
+
+  /* Table column positions (from left edge) */
+  --col1: 21mm;
+  --col2: 40mm;
+  --col3: 120.3mm;
+  --col4: 133.7mm;
+  --col5: 151mm;
+  --col6: 172.2mm;
+
+  /* Fonts */
+  --font-body: Arial, Helvetica, sans-serif;
+  --font-head: Calibri, "Segoe UI", system-ui, sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media print {
+  /* Page Setup - German Invoice Standard */
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm;
+  }
+
+  /* Base typography */
+  body {
+    font: var(--fs-s)/var(--lh-s) var(--font-body);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Nur beim Drucken: Verstecke die Modal-Controls */
+  .sticky.top-0 {
+    display: none !important;
+  }
+
+  /* Buttons beim Drucken verstecken */
+  button,
+  .bg-indigo-600,
+  .bg-blue-600,
+  .bg-orange-600,
+  .bg-red-600 {
+    display: none !important;
+  }
+
+  /* Page break control */
+  .page-break-avoid {
+    page-break-inside: avoid;
+  }
+
+  /* Table pagination - prevent row splitting across pages */
+  table {
+    page-break-inside: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  td, th {
+    page-break-inside: avoid;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
