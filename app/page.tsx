@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import * as XLSX from 'xlsx';
+import PDFUpload from '../components/PDFUpload';
 
 interface BewilligungRow {
   lkCode: string;
@@ -317,6 +318,40 @@ export default function Home() {
     setRechnungPositionen(rechnungPositionen.filter((_, i) => i !== index));
   };
 
+  const handleBewilligungExtracted = (data: any) => {
+    if (data.klientData) {
+      setKlientData({
+        ...klientData,
+        ...data.klientData
+      });
+    }
+
+    if (data.bewilligung && data.bewilligung.length > 0) {
+      setBewilligung(data.bewilligung);
+    }
+  };
+
+  const handleRechnungExtracted = (data: any) => {
+    if (data.rechnungsPositionen && data.rechnungsPositionen.length > 0) {
+      // Check which positions are authorized based on Bewilligung
+      const positionenMitBewilligung = data.rechnungsPositionen.map((pos: RechnungsPosition) => {
+        const istBewilligt = bewilligung.some(b =>
+          b.lkCode.toUpperCase() === pos.lkCode.toUpperCase()
+        );
+        return {
+          ...pos,
+          bewilligt: istBewilligt
+        };
+      });
+
+      setRechnungPositionen(positionenMitBewilligung);
+    }
+
+    if (data.rechnungsnummer) {
+      setRechnungsnummer(data.rechnungsnummer);
+    }
+  };
+
   const berechneAUBs = (lkPositionen: RechnungsPosition[]): RechnungsPosition[] => {
     const aubPositionen: RechnungsPosition[] = [];
     
@@ -608,60 +643,87 @@ export default function Home() {
 
   return (
     <>
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 mb-6 print:hidden">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <img src={logoUrl} alt="DomusVita Logo" className="h-20 w-auto" />
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <header className="glass-card glass-card-hover rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 print:hidden animate-slide-up">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex items-center gap-4 sm:gap-6">
+              <img
+                src={logoUrl}
+                alt="DomusVita Logo"
+                className="h-16 sm:h-20 w-auto transition-transform duration-300 hover:scale-105"
+              />
               <div>
-                <h1 className="text-4xl font-bold text-indigo-600 mb-2">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 sm:mb-2 tracking-tight">
                   DomusVita Pflegeabrechnung
                 </h1>
-                <p className="text-gray-600">
-                  Automatische Korrekturrechnung fuer BA/PK
+                <p className="text-sm sm:text-base text-gray-600 font-medium">
+                  Automatische Korrekturrechnung für BA/PK
                 </p>
               </div>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-row sm:flex-col gap-2 sm:gap-3">
               <button
                 onClick={ladeTestBewilligung}
-                className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 text-sm font-medium whitespace-nowrap"
+                className="flex-1 sm:flex-none bg-green-500 hover:bg-green-600 text-white px-4 sm:px-6 py-2.5 sm:py-3
+                         rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap
+                         transition-all duration-200 btn-haptic shadow-sm hover:shadow-md"
               >
-                🧪 Test-Bewilligung laden
+                🧪 Test-Bewilligung
               </button>
               <button
                 onClick={ladeTestRechnungspositionen}
-                className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 text-sm font-medium whitespace-nowrap"
+                className="flex-1 sm:flex-none bg-purple-500 hover:bg-purple-600 text-white px-4 sm:px-6 py-2.5 sm:py-3
+                         rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap
+                         transition-all duration-200 btn-haptic shadow-sm hover:shadow-md"
               >
-                🧪 Test-Rechnungen laden
+                🧪 Test-Rechnung
               </button>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-6 print:hidden">
-          <img src={logoUrl} alt="DomusVita Logo" className="h-20 w-auto" />
-          <div>
-            <h1 className="text-4xl font-bold text-indigo-600 mb-2">
-              DomusVita Pflegeabrechnung
-            </h1>
-            <p className="text-gray-600">
-              Automatische Korrekturrechnung fuer BA/PK
+        </header>
+
+        {/* PDF Upload Section */}
+        <section className="glass-card glass-card-hover rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 print:hidden animate-fade-in">
+          <div className="mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 tracking-tight">
+              📤 PDFs hochladen
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600">
+              Laden Sie Bewilligung und/oder Rechnung als PDF hoch. Claude OCR extrahiert automatisch alle Daten.
             </p>
           </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6 print:hidden">
-          <h3 className="text-lg font-semibold text-blue-900 mb-4">
-            Schritt 1: Grunddaten
-          </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <PDFUpload
+              type="bewilligung"
+              onDataExtracted={handleBewilligungExtracted}
+            />
+            <PDFUpload
+              type="rechnung"
+              onDataExtracted={handleRechnungExtracted}
+            />
+          </div>
+        </section>
+
+        {/* Main Form Section */}
+        <section className="glass-card rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 print:hidden animate-fade-in">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 tracking-tight">
+            Schritt 1: Grunddaten
+          </h2>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
           <div>
-            <label className="text-gray-600 block mb-1 font-medium">Pflegedienst auswählen:</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Pflegedienst auswählen
+            </label>
             <select
               value={pflegedienstKey}
               onChange={(e) => setPflegedienstKey(e.target.value)}
-              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                       transition-all duration-200 text-sm font-medium text-gray-900"
             >
               <option value="kreuzberg">Kreuzberg - Waldemarstr. 10 A</option>
               <option value="treptow">Treptow - Hoffmannstr. 15</option>
@@ -669,11 +731,15 @@ export default function Home() {
           </div>
 
           <div>
-            <label className="text-gray-600 block mb-1 font-medium">Wohnheim Standort auswählen:</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Wohnheim Standort auswählen
+            </label>
             <select
               value={wohnheimKey}
               onChange={(e) => setWohnheimKey(e.target.value)}
-              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                       transition-all duration-200 text-sm font-medium text-gray-900"
             >
               <option value="hebron">Haus Hebron - Hartriegelstr. 132</option>
               <option value="siefos">Siefos - Waldemarstr. 10a</option>
@@ -681,23 +747,33 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
           <div>
-            <label className="text-gray-600 block mb-1">Name Klient:</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Name Klient
+            </label>
             <input
               type="text"
-              placeholder="z.B. Tschida, Klaus"
+              placeholder="z.B. Mustermann, Max"
               value={klientData.name}
               onChange={(e) => updateKlientData('name', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                       transition-all duration-200 text-sm font-medium text-gray-900
+                       placeholder:text-gray-400"
+            />
           </div>
 
           <div>
-            <label className="text-gray-600 block mb-1">Pflegegrad:</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Pflegegrad
+            </label>
             <select
               value={klientData.pflegegrad}
               onChange={(e) => updateKlientData('pflegegrad', parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                       transition-all duration-200 text-sm font-medium text-gray-900"
             >
               <option value={2}>Pflegegrad 2</option>
               <option value={3}>Pflegegrad 3</option>
@@ -705,40 +781,49 @@ export default function Home() {
               <option value={5}>Pflegegrad 5</option>
             </select>
           </div>
-
-
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6">
           <div>
-            <label className="text-gray-600 block mb-1">Abrechnungszeitraum Von:</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Abrechnungszeitraum Von
+            </label>
             <input
               type="date"
               value={klientData.zeitraumVon}
               onChange={(e) => updateKlientData('zeitraumVon', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                       transition-all duration-200 text-sm font-medium text-gray-900"
+            />
           </div>
           <div>
-            <label className="text-gray-600 block mb-1">Abrechnungszeitraum Bis:</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Abrechnungszeitraum Bis
+            </label>
             <input
               type="date"
               value={klientData.zeitraumBis}
               onChange={(e) => updateKlientData('zeitraumBis', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                       transition-all duration-200 text-sm font-medium text-gray-900"
+            />
           </div>
         </div>
 
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-xs text-blue-800">
-            <strong>Automatisch gesetzt:</strong> Pflegedienst: {dienst.name}, {dienst.strasse} |
-            Klientenadresse: {klientAdresse}
+        <div className="mt-6 p-4 bg-blue-50 rounded-2xl border border-blue-100">
+          <p className="text-sm text-blue-800">
+            <strong className="font-semibold">Automatisch gesetzt:</strong> Pflegedienst: {dienst.name}, {dienst.strasse} • Klientenadresse: {klientAdresse}
           </p>
         </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6 print:hidden">
-          <h3 className="text-lg font-semibold text-green-900 mb-4">
+        </section>
+
+        {/* Bewilligte Leistungen Section */}
+        <section className="glass-card rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 print:hidden animate-fade-in">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 tracking-tight">
             Schritt 2: Bewilligte Leistungen
-          </h3>
+          </h2>
 
         <div className="mb-6">
           <p className="text-sm text-gray-600 mb-3">
@@ -885,7 +970,7 @@ export default function Home() {
             </div>
           )}
         </div>
-        </div>
+        </section>
 
         {bewilligung.length > 0 && (
           <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 print:hidden">

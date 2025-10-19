@@ -2,7 +2,16 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1d1d1f;
+
+  /* Apple-inspired Design Tokens */
+  --apple-blue: #007aff;
+  --apple-blue-hover: #0051d5;
+  --apple-gray: #86868b;
+  --apple-gray-light: #f5f5f7;
+  --apple-gray-medium: #d2d2d7;
+  --apple-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --apple-shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.12);
 
   /* German Invoice Design Tokens */
   /* Page dimensions */
@@ -41,8 +50,101 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", monospace;
+}
+
+/* Apple-style smooth scrolling */
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Apple-style focus states */
+*:focus {
+  outline: 2px solid var(--apple-blue);
+  outline-offset: 2px;
+}
+
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Custom animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Glassmorphism utilities */
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: var(--apple-shadow);
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--apple-shadow-lg);
+}
+
+/* Apple-style button haptic feedback */
+.btn-haptic {
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-haptic:active {
+  transform: scale(0.97);
+}
+
+/* Smooth transitions for all interactive elements */
+button, input, select, textarea, a {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media print {
@@ -101,7 +203,27 @@
 }
 
 body {
-  background: var(--background);
+  background: var(--apple-gray-light);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  font-feature-settings: "kern" 1, "liga" 1;
+  letter-spacing: -0.01em;
+}
+
+/* Remove default focus rings on mobile */
+@media (max-width: 768px) {
+  button:focus,
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+  }
+}
+
+/* Touch-optimized elements */
+@media (hover: none) and (pointer: coarse) {
+  button, a, input, select, textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
