@@ -172,17 +172,12 @@ export default function PDFUpload({ type, onDataExtracted }: PDFUploadProps) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
-          relative overflow-hidden
-          border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer
-          transition-all duration-300 ease-out
-          ${isDragging
-            ? 'border-blue-500 bg-blue-50 scale-105 shadow-lg'
-            : success
-            ? 'border-green-400 bg-green-50'
-            : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-md'
-          }
-          ${isProcessing ? 'cursor-wait' : 'btn-haptic'}
-          min-h-[180px] sm:min-h-[200px] flex flex-col items-center justify-center
+          drag-area frosted-glass rounded-3xl p-8 sm:p-12 text-center cursor-pointer
+          transition-all duration-500
+          ${isDragging ? 'dragging' : ''}
+          ${success ? 'success-pulse border-green-400' : ''}
+          ${isProcessing ? 'cursor-wait' : ''}
+          min-h-[200px] sm:min-h-[240px] flex flex-col items-center justify-center
         `}
       >
         {!file ? (
@@ -190,10 +185,10 @@ export default function PDFUpload({ type, onDataExtracted }: PDFUploadProps) {
             <div className="text-5xl sm:text-6xl mb-2 transform transition-transform duration-300 hover:scale-110">
               {getIcon()}
             </div>
-            <div className="text-base sm:text-lg font-semibold text-gray-800 tracking-tight">
+            <div className="text-base sm:text-lg font-semibold text-white tracking-tight">
               {getTitle()}
             </div>
-            <div className="text-xs sm:text-sm text-gray-500 font-medium">
+            <div className="text-xs sm:text-sm text-gray-300 font-medium">
               PDF hierher ziehen oder klicken
             </div>
             <div className="hidden sm:block text-xs text-gray-400 mt-2">
@@ -204,17 +199,17 @@ export default function PDFUpload({ type, onDataExtracted }: PDFUploadProps) {
           <div className="w-full space-y-4">
             <div className={`
               relative rounded-xl px-4 sm:px-6 py-4 transition-all duration-300
-              ${success ? 'bg-green-100' : 'bg-gray-100'}
+              ${success ? 'bg-green-900/20 border border-green-500/30' : 'bg-white/5 border border-white/10'}
             `}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-2xl">{getIcon()}</span>
-                    <span className="text-sm font-semibold text-gray-900 truncate">
+                    <span className="text-sm font-semibold text-white truncate">
                       {file.name}
                     </span>
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-400">
                     {(file.size / 1024 / 1024).toFixed(2)} MB
                   </div>
                 </div>
@@ -237,11 +232,11 @@ export default function PDFUpload({ type, onDataExtracted }: PDFUploadProps) {
 
               {isProcessing && (
                 <div className="mt-4 flex items-center justify-center gap-3 animate-fade-in">
-                  <div className="relative w-5 h-5">
-                    <div className="absolute inset-0 rounded-full border-2 border-gray-300"></div>
-                    <div className="absolute inset-0 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
+                  <div className="relative w-5 h-5 spinner-glow">
+                    <div className="absolute inset-0 rounded-full border-2 border-gray-600"></div>
+                    <div className="absolute inset-0 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin"></div>
                   </div>
-                  <span className="text-sm text-gray-700 font-medium">
+                  <span className="text-sm text-gray-300 font-medium">
                     OCR wird verarbeitet...
                   </span>
                 </div>
@@ -265,7 +260,7 @@ export default function PDFUpload({ type, onDataExtracted }: PDFUploadProps) {
       </div>
 
       {error && (
-        <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm animate-slide-up">
+        <div className="mt-3 p-4 bg-red-900/20 border border-red-500/30 rounded-xl text-red-400 text-sm animate-slide-up backdrop-blur-xl">
           <div className="flex items-start gap-2">
             <span className="text-lg">⚠️</span>
             <div>
