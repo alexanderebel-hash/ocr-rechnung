@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import * as XLSX from 'xlsx';
 import PDFUpload from '../components/PDFUpload';
+import Hero from '../components/Hero';
+import HowItWorks from '../components/HowItWorks';
 
 interface BewilligungRow {
   lkCode: string;
@@ -643,59 +645,47 @@ export default function Home() {
 
   return (
     <>
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <header className="glass-card glass-card-hover rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 print:hidden animate-slide-up">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="flex items-center gap-4 sm:gap-6">
-              <img
-                src={logoUrl}
-                alt="DomusVita Logo"
-                className="h-16 sm:h-20 w-auto transition-transform duration-300 hover:scale-105"
-              />
-              <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 sm:mb-2 tracking-tight">
-                  DomusVita Pflegeabrechnung
-                </h1>
-                <p className="text-sm sm:text-base text-gray-600 font-medium">
-                  Automatische Korrekturrechnung für BA/PK
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-row sm:flex-col gap-2 sm:gap-3">
-              <button
-                onClick={ladeTestBewilligung}
-                className="flex-1 sm:flex-none bg-green-500 hover:bg-green-600 text-white px-4 sm:px-6 py-2.5 sm:py-3
-                         rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap
-                         transition-all duration-200 btn-haptic shadow-sm hover:shadow-md"
-              >
-                🧪 Test-Bewilligung
-              </button>
-              <button
-                onClick={ladeTestRechnungspositionen}
-                className="flex-1 sm:flex-none bg-purple-500 hover:bg-purple-600 text-white px-4 sm:px-6 py-2.5 sm:py-3
-                         rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap
-                         transition-all duration-200 btn-haptic shadow-sm hover:shadow-md"
-              >
-                🧪 Test-Rechnung
-              </button>
-            </div>
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <Hero />
+
+      {/* How It Works Section */}
+      <HowItWorks />
+
+      {/* Main Content */}
+      <div className="relative px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <div className="max-w-7xl mx-auto">
+
+          {/* Test Buttons - Developer Tools */}
+          <div className="flex flex-row gap-3 mb-8 print:hidden justify-center">
+            <button
+              onClick={ladeTestBewilligung}
+              className="btn-premium-gradient text-white px-6 py-3 rounded-xl font-semibold text-sm
+                       transition-all duration-300 shadow-lg"
+            >
+              🧪 Test-Bewilligung
+            </button>
+            <button
+              onClick={ladeTestRechnungspositionen}
+              className="btn-premium-gradient text-white px-6 py-3 rounded-xl font-semibold text-sm
+                       transition-all duration-300 shadow-lg"
+            >
+              🧪 Test-Rechnung
+            </button>
           </div>
-        </header>
 
         {/* PDF Upload Section */}
-        <section className="glass-card glass-card-hover rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 print:hidden animate-fade-in">
-          <div className="mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 tracking-tight">
+        <section className="frosted-glass rounded-3xl p-8 sm:p-12 mb-12 print:hidden animate-fade-in">
+          <div className="mb-8 text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3 text-gradient">
               📤 PDFs hochladen
             </h2>
-            <p className="text-sm sm:text-base text-gray-600">
+            <p className="text-base sm:text-lg text-gray-300">
               Laden Sie Bewilligung und/oder Rechnung als PDF hoch. Claude OCR extrahiert automatisch alle Daten.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
             <PDFUpload
               type="bewilligung"
               onDataExtracted={handleBewilligungExtracted}
@@ -708,22 +698,21 @@ export default function Home() {
         </section>
 
         {/* Main Form Section */}
-        <section className="glass-card rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 print:hidden animate-fade-in">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 tracking-tight">
+        <section className="frosted-glass rounded-3xl p-8 sm:p-12 mb-12 print:hidden animate-fade-in">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-8 text-center">
             Schritt 1: Grunddaten
           </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-300 mb-2">
               Pflegedienst auswählen
             </label>
             <select
               value={pflegedienstKey}
               onChange={(e) => setPflegedienstKey(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       transition-all duration-200 text-sm font-medium text-gray-900"
+              className="input-premium w-full px-4 py-3 rounded-xl
+                       transition-all duration-200 text-sm font-medium"
             >
               <option value="kreuzberg">Kreuzberg - Waldemarstr. 10 A</option>
               <option value="treptow">Treptow - Hoffmannstr. 15</option>
@@ -731,15 +720,14 @@ export default function Home() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-300 mb-2">
               Wohnheim Standort auswählen
             </label>
             <select
               value={wohnheimKey}
               onChange={(e) => setWohnheimKey(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       transition-all duration-200 text-sm font-medium text-gray-900"
+              className="input-premium w-full px-4 py-3 rounded-xl
+                       transition-all duration-200 text-sm font-medium"
             >
               <option value="hebron">Haus Hebron - Hartriegelstr. 132</option>
               <option value="siefos">Siefos - Waldemarstr. 10a</option>
@@ -747,9 +735,9 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-300 mb-2">
               Name Klient
             </label>
             <input
@@ -757,23 +745,20 @@ export default function Home() {
               placeholder="z.B. Mustermann, Max"
               value={klientData.name}
               onChange={(e) => updateKlientData('name', e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       transition-all duration-200 text-sm font-medium text-gray-900
-                       placeholder:text-gray-400"
+              className="input-premium w-full px-4 py-3 rounded-xl
+                       transition-all duration-200 text-sm font-medium"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-300 mb-2">
               Pflegegrad
             </label>
             <select
               value={klientData.pflegegrad}
               onChange={(e) => updateKlientData('pflegegrad', parseInt(e.target.value))}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       transition-all duration-200 text-sm font-medium text-gray-900"
+              className="input-premium w-full px-4 py-3 rounded-xl
+                       transition-all duration-200 text-sm font-medium"
             >
               <option value={2}>Pflegegrad 2</option>
               <option value={3}>Pflegegrad 3</option>
@@ -785,29 +770,27 @@ export default function Home() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-300 mb-2">
               Abrechnungszeitraum Von
             </label>
             <input
               type="date"
               value={klientData.zeitraumVon}
               onChange={(e) => updateKlientData('zeitraumVon', e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       transition-all duration-200 text-sm font-medium text-gray-900"
+              className="input-premium w-full px-4 py-3 rounded-xl
+                       transition-all duration-200 text-sm font-medium"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-300 mb-2">
               Abrechnungszeitraum Bis
             </label>
             <input
               type="date"
               value={klientData.zeitraumBis}
               onChange={(e) => updateKlientData('zeitraumBis', e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       transition-all duration-200 text-sm font-medium text-gray-900"
+              className="input-premium w-full px-4 py-3 rounded-xl
+                       transition-all duration-200 text-sm font-medium"
             />
           </div>
         </div>
@@ -1905,6 +1888,7 @@ export default function Home() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
     </>
