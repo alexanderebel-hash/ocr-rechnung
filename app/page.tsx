@@ -895,53 +895,53 @@ export default function Home() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-green-100">
+              <table className="data-table w-full text-sm">
+                <thead>
                   <tr>
-                    <th className="px-3 py-2 text-left">LK-Code</th>
-                    <th className="px-3 py-2 text-left">Bezeichnung</th>
-                    <th className="px-3 py-2 text-right">Je Woche</th>
-                    <th className="px-3 py-2 text-right">Je Monat</th>
-                    <th className="px-3 py-2 text-center">Aktion</th>
+                    <th className="px-4 py-3 text-left text-gray-300 font-semibold">LK-Code</th>
+                    <th className="px-4 py-3 text-left text-gray-300 font-semibold">Bezeichnung</th>
+                    <th className="px-4 py-3 text-right text-gray-300 font-semibold">Je Woche</th>
+                    <th className="px-4 py-3 text-right text-gray-300 font-semibold">Je Monat</th>
+                    <th className="px-4 py-3 text-center text-gray-300 font-semibold">Aktion</th>
                   </tr>
                 </thead>
                 <tbody>
                   {bewilligung.map((row, idx) => (
-                    <tr key={idx} className="border-b border-green-100 hover:bg-green-50">
-                      <td className="px-3 py-2">
+                    <tr key={idx}>
+                      <td className="px-4 py-3">
                         <input
                           type="text"
                           placeholder="LK04"
                           value={row.lkCode}
                           onChange={(e) => updateBewilligung(idx, 'lkCode', e.target.value)}
-                          className="w-full px-2 py-1 border rounded font-mono text-sm" />
+                          className="input-premium w-full px-3 py-2 rounded-lg font-mono text-sm" />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-4 py-3">
                         <input
                           type="text"
                           placeholder="Grosse Koerperpflege"
                           value={row.bezeichnung}
                           onChange={(e) => updateBewilligung(idx, 'bezeichnung', e.target.value)}
-                          className="w-full px-2 py-1 border rounded text-sm" />
+                          className="input-premium w-full px-3 py-2 rounded-lg text-sm" />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-4 py-3">
                         <input
                           type="number"
                           value={row.jeWoche}
                           onChange={(e) => updateBewilligung(idx, 'jeWoche', parseInt(e.target.value) || 0)}
-                          className="w-full px-2 py-1 border rounded text-right text-sm" />
+                          className="input-premium w-full px-3 py-2 rounded-lg text-right text-sm" />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-4 py-3">
                         <input
                           type="number"
                           value={row.jeMonat}
                           onChange={(e) => updateBewilligung(idx, 'jeMonat', parseInt(e.target.value) || 0)}
-                          className="w-full px-2 py-1 border rounded text-right text-sm" />
+                          className="input-premium w-full px-3 py-2 rounded-lg text-right text-sm" />
                       </td>
-                      <td className="px-3 py-2 text-center">
+                      <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => removeLK(idx)}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-red-400 hover:text-red-300 transition-colors duration-200"
                         >
                           X
                         </button>
@@ -1040,68 +1040,68 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-purple-100">
+                  <table className="data-table w-full text-sm">
+                    <thead>
                       <tr>
-                        <th className="px-2 py-2 text-left">LK-Code</th>
-                        <th className="px-2 py-2 text-left">Bezeichnung</th>
-                        <th className="px-2 py-2 text-right">Menge</th>
-                        <th className="px-2 py-2 text-right">Preis</th>
-                        <th className="px-2 py-2 text-right">Gesamt</th>
-                        <th className="px-2 py-2 text-center">Status</th>
-                        <th className="px-2 py-2 text-center">Aktion</th>
+                        <th className="px-3 py-3 text-left text-gray-300 font-semibold">LK-Code</th>
+                        <th className="px-3 py-3 text-left text-gray-300 font-semibold">Bezeichnung</th>
+                        <th className="px-3 py-3 text-right text-gray-300 font-semibold">Menge</th>
+                        <th className="px-3 py-3 text-right text-gray-300 font-semibold">Preis</th>
+                        <th className="px-3 py-3 text-right text-gray-300 font-semibold">Gesamt</th>
+                        <th className="px-3 py-3 text-center text-gray-300 font-semibold">Status</th>
+                        <th className="px-3 py-3 text-center text-gray-300 font-semibold">Aktion</th>
                       </tr>
                     </thead>
                     <tbody>
                       {rechnungPositionen.map((pos, idx) => (
-                        <tr key={idx} className={`border-b hover:bg-purple-50 ${pos.bewilligt ? 'bg-green-50' : 'bg-red-50'}`}>
-                          <td className="px-2 py-2">
+                        <tr key={idx} className={pos.bewilligt ? '' : 'bg-red-900/20'}>
+                          <td className="px-3 py-3">
                             <input
                               type="text"
                               value={pos.lkCode}
                               readOnly
-                              className="w-full px-2 py-1 border rounded font-mono text-sm bg-gray-100"
+                              className="input-premium w-full px-3 py-2 rounded-lg font-mono text-sm opacity-70 cursor-not-allowed"
                             />
                           </td>
-                          <td className="px-2 py-2">
+                          <td className="px-3 py-3">
                             <input
                               type="text"
                               value={pos.bezeichnung}
                               readOnly
-                              className="w-full px-2 py-1 border rounded text-sm bg-gray-100"
+                              className="input-premium w-full px-3 py-2 rounded-lg text-sm opacity-70 cursor-not-allowed"
                             />
                           </td>
-                          <td className="px-2 py-2">
+                          <td className="px-3 py-3">
                             <input
                               type="number"
                               value={pos.menge}
                               onChange={(e) => updateRechnungsPosition(idx, 'menge', parseFloat(e.target.value) || 0)}
-                              className="w-full px-2 py-1 border rounded text-right text-sm font-bold"
+                              className="input-premium w-full px-3 py-2 rounded-lg text-right text-sm font-bold"
                             />
                           </td>
-                          <td className="px-2 py-2">
+                          <td className="px-3 py-3">
                             <input
                               type="number"
                               step="0.01"
                               value={pos.preis}
                               readOnly
-                              className="w-full px-2 py-1 border rounded text-right text-sm bg-gray-100"
+                              className="input-premium w-full px-3 py-2 rounded-lg text-right text-sm opacity-70 cursor-not-allowed"
                             />
                           </td>
-                          <td className="px-2 py-2 text-right font-medium">
+                          <td className="px-3 py-3 text-right font-medium text-white">
                             {pos.gesamt.toFixed(2)}
                           </td>
-                          <td className="px-2 py-2 text-center">
+                          <td className="px-3 py-3 text-center">
                             {pos.bewilligt ? (
-                              <span className="text-green-600 font-bold text-lg">✓</span>
+                              <span className="text-green-400 font-bold text-lg">✓</span>
                             ) : (
-                              <span className="text-red-600 font-bold text-lg">✗</span>
+                              <span className="text-red-400 font-bold text-lg">✗</span>
                             )}
                           </td>
-                          <td className="px-2 py-2 text-center">
+                          <td className="px-3 py-3 text-center">
                             <button
                               onClick={() => removeRechnungsPosition(idx)}
-                              className="text-red-500 hover:text-red-700"
+                              className="text-red-400 hover:text-red-300 transition-colors duration-200"
                             >
                               X
                             </button>
