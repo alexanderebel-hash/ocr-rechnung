@@ -148,10 +148,10 @@ button, input, select, textarea, a {
 }
 
 @media print {
-  /* Page Setup - German Invoice Standard */
+  /* Page Setup - German Invoice Standard (DIN 5008) */
   @page {
     size: A4 portrait;
-    margin: 1.5cm;
+    margin: var(--m-top) var(--m-right) var(--m-bottom) var(--m-left);
   }
 
   /* Base typography */
@@ -160,8 +160,8 @@ button, input, select, textarea, a {
     font-variant-numeric: tabular-nums;
   }
 
-  /* Nur beim Drucken: Verstecke die Modal-Controls */
-  .sticky.top-0 {
+  /* Hide UI elements during print */
+  .print\:hidden {
     display: none !important;
   }
 
@@ -170,35 +170,73 @@ button, input, select, textarea, a {
   .bg-indigo-600,
   .bg-blue-600,
   .bg-orange-600,
-  .bg-red-600 {
+  .bg-red-600,
+  .sticky {
     display: none !important;
   }
 
-  /* Page break control */
-  .page-break-avoid {
-    page-break-inside: avoid;
-  }
-
-  /* Table pagination - prevent row splitting across pages */
+  /* CRITICAL: Table pagination - prevent row splitting across pages */
   table {
-    page-break-inside: auto;
+    page-break-inside: auto !important;
+    border-collapse: collapse !important;
   }
 
+  /* Table header repeats on every page */
   thead {
-    display: table-header-group;
+    display: table-header-group !important;
   }
 
+  /* Table footer appears at bottom of last page */
   tfoot {
-    display: table-footer-group;
+    display: table-footer-group !important;
   }
 
+  /* NEVER split a table row across pages */
   tr {
-    page-break-inside: avoid;
-    page-break-after: auto;
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
   }
 
+  /* NEVER split table cells */
   td, th {
-    page-break-inside: avoid;
+    page-break-inside: avoid !important;
+  }
+
+  /* Invoice table specific rules */
+  .invoice-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .invoice-table thead {
+    display: table-header-group !important;
+  }
+
+  .invoice-table tbody tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  .invoice-table td,
+  .invoice-table th {
+    page-break-inside: avoid !important;
+  }
+
+  /* Prevent orphaned rows */
+  .invoice-table tbody {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Fixed header and footer positioning */
+  .fixed-header,
+  .fixed-header-privat {
+    position: running(header);
+  }
+
+  .fixed-footer,
+  .fixed-footer-privat {
+    position: running(footer);
   }
 }
 
