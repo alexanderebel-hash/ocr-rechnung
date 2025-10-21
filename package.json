@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
+    "@react-pdf/renderer": "^4.3.1",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.546.0",
     "next": "15.5.5",
@@ -24,6 +25,7 @@
     "@types/react-dom": "^19",
     "@types/xlsx": "^0.0.35",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vercel": "^48.4.1"
   }
 }

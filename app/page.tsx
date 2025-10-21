@@ -621,16 +621,151 @@ export default function Home() {
     }
   };
 
-  const executePrintOrDownload = (type: 'ba' | 'privat', action: 'print' | 'download') => {
-    if (type === 'ba') {
-      setShowPdfPreview(true);
-    } else {
-      setShowPrivatPreview(true);
+  const executePrintOrDownload = async (type: 'ba' | 'privat', action: 'print' | 'download') => {
+    try {
+      // Prepare data for PDF generation
+      const rechnung = berechneRechnungFuerAnzeige();
+      const korrektur = berechneKorrekturrechnung();
+
+      let pdfData;
+
+      if (type === 'ba') {
+        // BA Invoice data
+        pdfData = {
+          rechnungsnummer: rechnungsnummer || 'KORR-' + Date.now(),
+          rechnungsDatum: new Date().toLocaleDateString('de-DE'),
+          debitor: klientData.debitor,
+          ik: dienst.ik,
+          zeitraumVon: klientData.zeitraumVon,
+          zeitraumBis: klientData.zeitraumBis,
+          klient: {
+            name: klientData.name,
+            adresse: klientAdresse,
+            pflegegrad: klientData.pflegegrad,
+          },
+          dienst: {
+            name: dienst.name,
+            strasse: dienst.strasse,
+            plz: dienst.plz,
+            ik: dienst.ik,
+            telefon: dienst.telefon,
+            telefax: dienst.telefax,
+            email: dienst.email,
+          },
+          positionen: [
+            ...rechnung.aubPositionen.map(p => ({
+              lkCode: 'AUB',
+              bezeichnung: p.bezeichnung,
+              menge: p.menge,
+              preis: p.preis,
+              gesamt: p.gesamt,
+              bewilligt: p.bewilligt,
+              istAUB: true,
+            })),
+            ...rechnung.allePositionen.map(p => ({
+              lkCode: p.lkCode,
+              bezeichnung: p.bezeichnung,
+              menge: p.menge,
+              preis: p.preis,
+              gesamt: p.gesamt,
+              bewilligt: p.bewilligt,
+              istAUB: false,
+              notiz: p.umgewandeltZu ? `→ in ${p.umgewandeltZu} umgewandelt` :
+                     (p.gekuerztVon ? `ℹ gekürzt von ${p.gekuerztVon} auf ${p.menge}` :
+                     (!p.bewilligt ? '⚠ erbracht, aktuell nicht bewilligt' : undefined)),
+            })),
+          ],
+          zwischensumme: rechnung.zwischensumme,
+          zinv: rechnung.zinv,
+          gesamtbetrag: rechnung.gesamtbetrag,
+          pflegekasse: pflegekassenBetrag,
+          rechnungsbetrag: rechnung.rechnungsbetragBA,
+          zahlungsziel: new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('de-DE'),
+        };
+      } else {
+        // Private Invoice data
+        pdfData = {
+          rechnungsnummer: 'PRIVAT-' + (rechnungsnummer || Date.now()),
+          rechnungsDatum: new Date().toLocaleDateString('de-DE'),
+          debitor: klientData.debitor,
+          ik: dienst.ik,
+          zeitraumVon: klientData.zeitraumVon,
+          zeitraumBis: klientData.zeitraumBis,
+          klient: {
+            name: klientData.name,
+            adresse: klientAdresse,
+            pflegegrad: klientData.pflegegrad,
+          },
+          dienst: {
+            name: dienst.name,
+            strasse: dienst.strasse,
+            plz: dienst.plz,
+            ik: dienst.ik,
+            telefon: dienst.telefon,
+            telefax: dienst.telefax,
+            email: dienst.email,
+          },
+          positionen: [
+            ...korrektur.aubPrivat.map(p => ({
+              lkCode: 'AUB',
+              bezeichnung: p.bezeichnung,
+              menge: p.menge,
+              preis: p.preis,
+              gesamt: p.gesamt,
+              bewilligt: false,
+              istAUB: true,
+            })),
+            ...korrektur.privatLKPositionen.map(p => ({
+              lkCode: p.lkCode,
+              bezeichnung: p.bezeichnung,
+              menge: p.menge,
+              preis: p.preis,
+              gesamt: p.gesamt,
+              bewilligt: false,
+              istAUB: false,
+            })),
+          ],
+          zwischensumme: korrektur.zwischensummePrivat,
+          zinv: korrektur.zinvPrivat,
+          gesamtbetrag: korrektur.gesamtbetragPrivat,
+          pflegekasse: 0,
+          rechnungsbetrag: korrektur.gesamtbetragPrivat,
+          zahlungsziel: new Date(Date.now() + 14*24*60*60*1000).toLocaleDateString('de-DE'),
+        };
+      }
+
+      // Call PDF generation API
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pdfData),
+      });
+
+      if (!response.ok) {
+        throw new Error('PDF generation failed');
+      }
+
+      // Download the PDF
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Rechnung_${pdfData.rechnungsnummer}.pdf`;
+
+      if (action === 'download') {
+        link.click();
+      } else {
+        // For print, open in new window
+        window.open(url, '_blank');
+      }
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      alert('Fehler bei der PDF-Generierung');
     }
-    
-    setTimeout(() => {
-      window.print();
-    }, 500);
   };
 
   const handleRechnungsnummerSubmit = () => {
