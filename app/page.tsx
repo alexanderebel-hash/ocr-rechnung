@@ -3,6 +3,7 @@ import { useState } from 'react';
 import * as XLSX from 'xlsx';
 import PDFUpload from '../components/PDFUpload';
 import BewilligungUpload from '../components/BewilligungUpload';
+import { KlientenDropdown } from '../components/KlientenDropdown';
 import Hero from '../components/Hero';
 import HowItWorks from '../components/HowItWorks';
 
@@ -835,8 +836,56 @@ export default function Home() {
         {/* Main Form Section */}
         <section className="frosted-glass rounded-3xl p-8 sm:p-12 mb-12 print:hidden animate-fade-in">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-8 text-center">
-            Schritt 1: Grunddaten
+            Schritt 1: Klient auswählen oder neu anlegen
           </h2>
+
+          {/* Klienten Dropdown */}
+          <div className="mb-12">
+            <KlientenDropdown
+              onSelect={(klient) => {
+                console.log('Selected klient:', klient);
+                // Auto-fill data from selected client
+                setKlientData({
+                  ...klientData,
+                  name: klient.name,
+                  pflegegrad: klient.pflegegrad,
+                });
+
+                // Auto-fill Bewilligung data if available
+                if (klient.bewilligungen && klient.bewilligungen.length > 0) {
+                  const bewilligung = klient.bewilligungen[0];
+                  setBewilligung(
+                    bewilligung.leistungen.map(l => ({
+                      lkCode: l.lk_code,
+                      bezeichnung: l.leistung,
+                      jeWoche: l.je_woche,
+                      jeMonat: l.je_monat,
+                    }))
+                  );
+                }
+              }}
+              onNewKlient={() => {
+                console.log('Creating new klient');
+                // Clear form for manual entry
+                setKlientData({
+                  name: '',
+                  zeitraumVon: '',
+                  zeitraumBis: '',
+                  geburtsdatum: '',
+                  pflegegrad: 3,
+                  debitor: '62202',
+                  belegNr: '13400',
+                  genehmigungsDatum: '06.01.2025',
+                  genehmigungsNr: 'S0131070040738'
+                });
+                setBewilligung([]);
+              }}
+            />
+          </div>
+
+          <h3 className="text-xl font-bold text-white mb-6 text-center">
+            Grunddaten
+          </h3>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div>
