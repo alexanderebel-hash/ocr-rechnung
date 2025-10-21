@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import * as XLSX from 'xlsx';
 import PDFUpload from '../components/PDFUpload';
+import BewilligungUpload from '../components/BewilligungUpload';
 import Hero from '../components/Hero';
 import HowItWorks from '../components/HowItWorks';
 
@@ -674,20 +675,19 @@ export default function Home() {
             </button>
           </div>
 
-        {/* PDF Upload Section */}
+        {/* Upload Section */}
         <section className="frosted-glass rounded-3xl p-8 sm:p-12 mb-12 print:hidden animate-fade-in">
           <div className="mb-8 text-center">
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3 text-gradient">
-              📤 PDFs hochladen
+              📤 Dokumente hochladen
             </h2>
             <p className="text-base sm:text-lg text-gray-300">
-              Laden Sie Bewilligung und/oder Rechnung als PDF hoch. Claude OCR extrahiert automatisch alle Daten.
+              Laden Sie Bewilligung (PDF oder Excel) und/oder Rechnung (PDF) hoch. Claude OCR extrahiert automatisch alle Daten.
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-            <PDFUpload
-              type="bewilligung"
+            <BewilligungUpload
               onDataExtracted={handleBewilligungExtracted}
             />
             <PDFUpload

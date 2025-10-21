@@ -12,9 +12,14 @@ export default function Hero() {
 
       {/* Content */}
       <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto animate-fade-in">
-        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 text-gradient text-glow">
-          DomusVita Pflegeabrechnung
-        </h1>
+        <div className="flex justify-center mb-8">
+          <img
+            src="/Head-Logo.png"
+            alt="DomusVita Logo"
+            className="h-24 sm:h-32 lg:h-40 w-auto object-contain animate-scale-in drop-shadow-2xl"
+            style={{ filter: 'drop-shadow(0 0 20px rgba(34, 211, 238, 0.3))' }}
+          />
+        </div>
         <p className="text-xl sm:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
           KI-gestützte Rechnungskorrektur für Berliner Pflegedienste
         </p>
