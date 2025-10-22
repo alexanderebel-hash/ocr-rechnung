@@ -113,8 +113,8 @@ const LK_PREISE: { [key: string]: { bezeichnung: string; preis: number; aubPreis
   'LK16B': { bezeichnung: 'Folgebesuch', preis: 10.00, aubPreis: 0.16 },
   'LK17A': { bezeichnung: 'Einsatzpauschale', preis: 5.37, aubPreis: 0.12 },
   'LK17B': { bezeichnung: 'Einsatzpauschale WE', preis: 10.73, aubPreis: 0.25 },
-  'LK20': { bezeichnung: 'Haeusliche Betreuung Paragraph 124 SGB XI', preis: 3.38, aubPreis: 0.33 },
-  'LK20_HH': { bezeichnung: 'Haeusliche Betreuung Paragraph 124 SGB XI (Haushaltsbuch)', preis: 3.38, aubPreis: 0.33 }
+  'LK20': { bezeichnung: 'Haeusliche Betreuung Paragraph 124 SGB XI', preis: 8.26, aubPreis: 0.33 },
+  'LK20_HH': { bezeichnung: 'Haeusliche Betreuung Paragraph 124 SGB XI (Haushaltsbuch)', preis: 8.26, aubPreis: 0.33 }
 };
 
 const PFLEGEGRAD_SACHLEISTUNG: { [key: number]: number } = {
