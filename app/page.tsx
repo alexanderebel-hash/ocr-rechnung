@@ -342,6 +342,30 @@ export default function Home() {
       });
     }
 
+    // Auto-select Pflegedienst based on IK number
+    if (data.pflegedienstIK) {
+      const ikNummer = data.pflegedienstIK.toString();
+      if (ikNummer === '461104151') {
+        setPflegedienstKey('kreuzberg');
+        console.log('✅ Auto-selected Pflegedienst: Kreuzberg');
+      } else if (ikNummer === '461104096') {
+        setPflegedienstKey('treptow');
+        console.log('✅ Auto-selected Pflegedienst: Treptow');
+      }
+    }
+
+    // Auto-select Wohnheim based on address
+    if (data.wohnheimAdresse) {
+      const adresse = data.wohnheimAdresse.toLowerCase();
+      if (adresse.includes('hartriegelstr') || adresse.includes('hartriegels')) {
+        setWohnheimKey('hebron');
+        console.log('✅ Auto-selected Wohnheim: Hebron (Hartriegelstr.)');
+      } else if (adresse.includes('waldemarstr') || adresse.includes('waldemars')) {
+        setWohnheimKey('siefos');
+        console.log('✅ Auto-selected Wohnheim: Siefos (Waldemarstr.)');
+      }
+    }
+
     if (data.rechnungsPositionen && data.rechnungsPositionen.length > 0) {
       // Check which positions are authorized based on Bewilligung
       const positionenMitBewilligung = data.rechnungsPositionen.map((pos: RechnungsPosition) => {

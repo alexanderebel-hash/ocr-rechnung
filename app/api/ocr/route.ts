@@ -144,7 +144,9 @@ function getRechnungPrompt(): string {
   "zinv": "ZINV-Betrag falls vorhanden, sonst null",
   "gesamtbetrag": Gesamtbetrag der Rechnung als Zahl,
   "abrechnungszeitraumVon": "Start-Datum des Abrechnungszeitraums im Format YYYY-MM-DD",
-  "abrechnungszeitraumBis": "End-Datum des Abrechnungszeitraums im Format YYYY-MM-DD"
+  "abrechnungszeitraumBis": "End-Datum des Abrechnungszeitraums im Format YYYY-MM-DD",
+  "pflegedienstIK": "IK-Nummer des Pflegedienstes (z.B. 461104151 oder 461104096)",
+  "wohnheimAdresse": "Adresse des Wohnheims falls vorhanden (Straße und Hausnummer)"
 }
 
 WICHTIG:
@@ -154,5 +156,7 @@ WICHTIG:
 - Berechne gesamt = menge * preis falls nicht direkt angegeben
 - ZINV steht für "Zusätzliche Investitionskosten"
 - Extrahiere den Abrechnungszeitraum (z.B. "2025-09-01 bis 2025-09-30")
+- Extrahiere die IK-Nummer des Pflegedienstes (461104151 = Kreuzberg, 461104096 = Treptow)
+- Extrahiere die Wohnheim-Adresse falls sichtbar (Hartriegelstr. 132 = Hebron, Waldemarstr. 10a = Siefos)
 - Gib NUR das JSON zurück, keine zusätzlichen Erklärungen`;
 }
