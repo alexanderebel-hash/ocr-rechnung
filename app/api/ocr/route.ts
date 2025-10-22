@@ -142,7 +142,9 @@ function getRechnungPrompt(): string {
     }
   ],
   "zinv": "ZINV-Betrag falls vorhanden, sonst null",
-  "gesamtbetrag": Gesamtbetrag der Rechnung als Zahl
+  "gesamtbetrag": Gesamtbetrag der Rechnung als Zahl,
+  "abrechnungszeitraumVon": "Start-Datum des Abrechnungszeitraums im Format YYYY-MM-DD",
+  "abrechnungszeitraumBis": "End-Datum des Abrechnungszeitraums im Format YYYY-MM-DD"
 }
 
 WICHTIG:
@@ -151,5 +153,6 @@ WICHTIG:
 - Preise und Beträge mit Dezimalpunkt (nicht Komma)
 - Berechne gesamt = menge * preis falls nicht direkt angegeben
 - ZINV steht für "Zusätzliche Investitionskosten"
+- Extrahiere den Abrechnungszeitraum (z.B. "2025-09-01 bis 2025-09-30")
 - Gib NUR das JSON zurück, keine zusätzlichen Erklärungen`;
 }

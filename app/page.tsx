@@ -333,6 +333,15 @@ export default function Home() {
   };
 
   const handleRechnungExtracted = (data: any) => {
+    // Auto-fill Abrechnungszeitraum if available
+    if (data.abrechnungszeitraumVon || data.abrechnungszeitraumBis) {
+      setKlientData({
+        ...klientData,
+        zeitraumVon: data.abrechnungszeitraumVon || klientData.zeitraumVon,
+        zeitraumBis: data.abrechnungszeitraumBis || klientData.zeitraumBis,
+      });
+    }
+
     if (data.rechnungsPositionen && data.rechnungsPositionen.length > 0) {
       // Check which positions are authorized based on Bewilligung
       const positionenMitBewilligung = data.rechnungsPositionen.map((pos: RechnungsPosition) => {
@@ -1650,10 +1659,11 @@ export default function Home() {
                   style={{ fontFamily: 'Arial, sans-serif', fontSize: '9pt', lineHeight: '11pt' }}
                 >
                   <div className="bg-white invoice-body" style={{ fontFamily: 'Arial, sans-serif', fontSize: '9pt', lineHeight: '11pt' }}>
-                    <div className="mb-6 print:hidden">
+                    {/* Logo Header - visible in both screen and print */}
+                    <div className="mb-6">
                       <div className="flex items-start justify-between mb-4 pb-3" style={{ borderBottom: '2px solid #4F46E5' }}>
                         <div className="flex-1">
-                          <img src={logoUrl} alt="DomusVita Logo" style={{ height: '60px', width: 'auto' }} />
+                          <img src="/logo.png" alt="DomusVita Logo" style={{ height: '60px', width: 'auto' }} />
                         </div>
                         <div className="text-right invoice-header-imprint" style={{ fontSize: '8pt', color: '#666' }}>
                           <p style={{ fontWeight: 'bold', margin: 0 }}>{dienst.name}</p>

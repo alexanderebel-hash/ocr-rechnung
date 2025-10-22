@@ -1,8 +1,23 @@
 'use client';
 
 export default function Hero() {
+  const deploymentDate = new Date().toLocaleString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
   return (
     <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden hero-gradient">
+      {/* Release Info - Top Left */}
+      <div className="absolute top-4 left-4 z-20">
+        <p className="text-xs text-gray-400 font-mono">
+          v1.0 - deployed: {deploymentDate}
+        </p>
+      </div>
+
       {/* Animated Gradient Orbs */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="gradient-orb gradient-orb-1" />
@@ -26,9 +41,6 @@ export default function Hero() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button className="btn-premium-gradient px-8 py-4 rounded-2xl text-white font-semibold text-lg">
             PDF hochladen
-          </button>
-          <button className="frosted-glass px-8 py-4 rounded-2xl text-white font-semibold text-lg hover:scale-105 transition-transform duration-300">
-            Demo ansehen
           </button>
         </div>
       </div>
