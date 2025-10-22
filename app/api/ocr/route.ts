@@ -7,6 +7,13 @@ const anthropic = new Anthropic({
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if API key is configured
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json(
+        { error: 'ANTHROPIC_API_KEY ist nicht konfiguriert. Bitte in Vercel Environment Variables setzen.' },
+        { status: 500 }
+      );
+    }
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const type = formData.get('type') as string; // 'bewilligung' oder 'rechnung'
