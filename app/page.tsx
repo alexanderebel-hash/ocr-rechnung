@@ -594,9 +594,21 @@ export default function Home() {
     const zinvBA = zwischensummeBA * 0.0338;
     const gesamtbetragBA = zwischensummeBA + zinvBA;
     const rechnungsbetragBA = Math.max(0, gesamtbetragBA - pflegekassenBetrag);
-    
+
     const baZahltNurZINV = gesamtbetragBA < pflegekassenBetrag;
     const finalRechnungsbetragBA = baZahltNurZINV ? zinvBA : rechnungsbetragBA;
+
+    // Debug logging for BA ZINV
+    console.log('💰 BA-Rechnung ZINV Debug:', {
+      bewilligtePositionen: bewilligtePositionen.length,
+      gesamtBewilligt: gesamtBewilligt.toFixed(2),
+      gesamtAUBBewilligt: gesamtAUBBewilligt.toFixed(2),
+      zwischensummeBA: zwischensummeBA.toFixed(2),
+      zinvBA: zinvBA.toFixed(2),
+      gesamtbetragBA: gesamtbetragBA.toFixed(2),
+      pflegekassenBetrag: pflegekassenBetrag.toFixed(2),
+      rechnungsbetragBA: finalRechnungsbetragBA.toFixed(2)
+    });
     
     const privatLKPositionen: RechnungsPosition[] = [];
     
@@ -661,7 +673,7 @@ export default function Home() {
       let pdfData;
 
       if (type === 'ba') {
-        // BA Invoice data
+        // BA Invoice data - Use korrektur data for accurate ZINV calculation
         pdfData = {
           rechnungsnummer: rechnungsnummer || 'KORR-' + Date.now(),
           rechnungsDatum: new Date().toLocaleDateString('de-DE'),
@@ -684,33 +696,32 @@ export default function Home() {
             email: dienst.email,
           },
           positionen: [
-            ...rechnung.aubPositionen.map(p => ({
+            ...korrektur.aubBewilligt.map(p => ({
               lkCode: 'AUB',
               bezeichnung: p.bezeichnung,
               menge: p.menge,
               preis: p.preis,
               gesamt: p.gesamt,
-              bewilligt: p.bewilligt,
+              bewilligt: true,
               istAUB: true,
             })),
-            ...rechnung.allePositionen.map(p => ({
+            ...korrektur.bewilligtePositionen.map(p => ({
               lkCode: p.lkCode,
               bezeichnung: p.bezeichnung,
               menge: p.menge,
               preis: p.preis,
               gesamt: p.gesamt,
-              bewilligt: p.bewilligt,
+              bewilligt: true,
               istAUB: false,
               notiz: p.umgewandeltZu ? `→ in ${p.umgewandeltZu} umgewandelt` :
-                     (p.gekuerztVon ? `ℹ gekürzt von ${p.gekuerztVon} auf ${p.menge}` :
-                     (!p.bewilligt ? '⚠ erbracht, aktuell nicht bewilligt' : undefined)),
+                     (p.gekuerztVon ? `ℹ gekürzt von ${p.gekuerztVon} auf ${p.menge}` : undefined),
             })),
           ],
-          zwischensumme: rechnung.zwischensumme,
-          zinv: rechnung.zinv,
-          gesamtbetrag: rechnung.gesamtbetrag,
+          zwischensumme: korrektur.zwischensummeBA,
+          zinv: korrektur.zinvBA,
+          gesamtbetrag: korrektur.gesamtbetragBA,
           pflegekasse: pflegekassenBetrag,
-          rechnungsbetrag: rechnung.rechnungsbetragBA,
+          rechnungsbetrag: korrektur.rechnungsbetragBA,
           zahlungsziel: new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('de-DE'),
         };
       } else {
