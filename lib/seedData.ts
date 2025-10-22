@@ -1,4 +1,5 @@
 import { parseExcelBewilligung, ParsedBewilligung } from './excelParser';
+import { getAllKlienten as getKlientenFromSupabase } from './supabase';
 
 const bewilligungFiles = [
   'Bewilligung_Tschida_01_01_25-31_12_25.xlsx',
@@ -48,6 +49,26 @@ export interface Klient {
 }
 
 export async function loadAllKlienten(): Promise<Klient[]> {
+  // Try to load from Supabase first
+  try {
+    console.log('🔄 Attempting to load clients from Supabase...');
+    const supabaseKlienten = await getKlientenFromSupabase();
+
+    if (supabaseKlienten && supabaseKlienten.length > 0) {
+      console.log(`✅ Loaded ${supabaseKlienten.length} clients from Supabase`);
+      return supabaseKlienten;
+    }
+
+    console.log('⚠️ No clients found in Supabase, falling back to local data');
+  } catch (error) {
+    console.error('❌ Error loading from Supabase, using fallback:', error);
+  }
+
+  // Fallback to Excel parsing or static data
+  return loadKlientenFromExcelOrFallback();
+}
+
+async function loadKlientenFromExcelOrFallback(): Promise<Klient[]> {
   const klienten: Klient[] = [];
 
   for (const file of bewilligungFiles) {
