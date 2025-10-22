@@ -155,10 +155,7 @@ export default function Home() {
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [showPrivatPreview, setShowPrivatPreview] = useState(false);
   const [korrekturAnfrage, setKorrekturAnfrage] = useState('');
-  const [showRechnungsnummerModal, setShowRechnungsnummerModal] = useState(false);
   const [rechnungsnummer, setRechnungsnummer] = useState('');
-  const [actionType, setActionType] = useState<'print' | 'download'>('print');
-  const [pdfType, setPdfType] = useState<'ba' | 'privat'>('ba');
   
   const ladeTestBewilligung = () => {
     const testBewilligung: BewilligungRow[] = [
@@ -349,10 +346,6 @@ export default function Home() {
       });
 
       setRechnungPositionen(positionenMitBewilligung);
-    }
-
-    if (data.rechnungsnummer) {
-      setRechnungsnummer(data.rechnungsnummer);
     }
   };
 
@@ -613,13 +606,7 @@ export default function Home() {
   };
 
   const handlePrintOrDownload = (type: 'ba' | 'privat', action: 'print' | 'download') => {
-    if (type === 'ba' && !rechnungsnummer) {
-      setPdfType(type);
-      setActionType(action);
-      setShowRechnungsnummerModal(true);
-    } else {
-      executePrintOrDownload(type, action);
-    }
+    executePrintOrDownload(type, action);
   };
 
   const executePrintOrDownload = async (type: 'ba' | 'privat', action: 'print' | 'download') => {
@@ -763,18 +750,15 @@ export default function Home() {
       }
 
       window.URL.revokeObjectURL(url);
+
+      // Clear Rechnungsnummer after successful print/download
+      setRechnungsnummer('');
     } catch (error) {
       console.error('PDF generation error:', error);
       alert('Fehler bei der PDF-Generierung');
     }
   };
 
-  const handleRechnungsnummerSubmit = () => {
-    if (rechnungsnummer.trim()) {
-      setShowRechnungsnummerModal(false);
-      executePrintOrDownload(pdfType, actionType || 'print');
-    }
-  };
 
   const theoretisch = berechneTheoretischeRechnung();
   const korrektur = berechneKorrekturrechnung();
@@ -1472,18 +1456,37 @@ export default function Home() {
                 </div>
 
               <div className="mt-6 space-y-4">
+                {/* Rechnungsnummer Input */}
+                <div className="border-t pt-4">
+                  <label className="block font-semibold text-gray-800 mb-2">
+                    Rechnungsnummer:
+                  </label>
+                  <input
+                    type="text"
+                    value={rechnungsnummer}
+                    onChange={(e) => setRechnungsnummer(e.target.value)}
+                    placeholder="z.B. RG-2025-001"
+                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-800"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Wird nach dem Drucken automatisch zurückgesetzt
+                  </p>
+                </div>
+
                 <div className="border-t pt-4">
                   <h4 className="font-semibold text-gray-800 mb-3">Korrekturrechnung BA:</h4>
                   <div className="flex gap-3">
-                    <button 
+                    <button
                       onClick={() => handlePrintOrDownload('ba', 'print')}
-                      className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium"
+                      disabled={!rechnungsnummer.trim()}
+                      className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       🖨️ Drucken
                     </button>
-                    <button 
+                    <button
                       onClick={() => handlePrintOrDownload('ba', 'download')}
-                      className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 font-medium"
+                      disabled={!rechnungsnummer.trim()}
+                      className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       💾 Als PDF speichern
                     </button>
@@ -1493,15 +1496,17 @@ export default function Home() {
                 <div className="border-t pt-4">
                   <h4 className="font-semibold text-gray-800 mb-3">Privatrechnung Klient:</h4>
                   <div className="flex gap-3">
-                    <button 
+                    <button
                       onClick={() => handlePrintOrDownload('privat', 'print')}
-                      className="flex items-center gap-2 bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 font-medium"
+                      disabled={!rechnungsnummer.trim()}
+                      className="flex items-center gap-2 bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       🖨️ Drucken
                     </button>
-                    <button 
+                    <button
                       onClick={() => handlePrintOrDownload('privat', 'download')}
-                      className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-medium"
+                      disabled={!rechnungsnummer.trim()}
+                      className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       💾 Als PDF speichern
                     </button>
@@ -1521,39 +1526,6 @@ export default function Home() {
           </>
         )}
 
-        {showRechnungsnummerModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Rechnungsnummer eingeben</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Bitte geben Sie die Rechnungsnummer ein:
-              </p>
-              <input
-                type="text"
-                value={rechnungsnummer}
-                onChange={(e) => setRechnungsnummer(e.target.value)}
-                placeholder="z.B. RG-2025-001"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 mb-4"
-                autoFocus
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={handleRechnungsnummerSubmit}
-                  disabled={!rechnungsnummer.trim()}
-                  className="flex-1 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 font-medium disabled:opacity-50"
-                >
-                  Weiter
-                </button>
-                <button
-                  onClick={() => setShowRechnungsnummerModal(false)}
-                  className="flex-1 bg-gray-400 text-white px-6 py-3 rounded-lg hover:bg-gray-500 font-medium"
-                >
-                  Abbrechen
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {showPdfPreview && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto print:bg-white print:relative print:block print:overflow-visible">

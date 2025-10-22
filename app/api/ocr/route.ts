@@ -142,8 +142,7 @@ function getRechnungPrompt(): string {
     }
   ],
   "zinv": "ZINV-Betrag falls vorhanden, sonst null",
-  "gesamtbetrag": Gesamtbetrag der Rechnung als Zahl,
-  "rechnungsnummer": "Rechnungsnummer falls vorhanden"
+  "gesamtbetrag": Gesamtbetrag der Rechnung als Zahl
 }
 
 WICHTIG:
