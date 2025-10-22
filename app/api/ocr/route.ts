@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: process.env.ClaudeOCR || process.env.ANTHROPIC_API_KEY,
 });
 
 export async function POST(request: NextRequest) {
   try {
     // Check if API key is configured
-    if (!process.env.ANTHROPIC_API_KEY) {
+    const apiKey = process.env.ClaudeOCR || process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
       return NextResponse.json(
-        { error: 'ANTHROPIC_API_KEY ist nicht konfiguriert. Bitte in Vercel Environment Variables setzen.' },
+        { error: 'ClaudeOCR oder ANTHROPIC_API_KEY ist nicht konfiguriert. Bitte in Vercel Environment Variables setzen.' },
         { status: 500 }
       );
     }
