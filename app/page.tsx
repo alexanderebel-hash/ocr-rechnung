@@ -439,16 +439,26 @@ export default function Home() {
     
     const bewilligtePositionen = positionen.filter(p => p.bewilligt);
     const aubPositionen = berechneAUBs(bewilligtePositionen);
-    
+
     const gesamtBewilligt = bewilligtePositionen.reduce((sum, p) => sum + p.gesamt, 0);
     const gesamtAUB = aubPositionen.reduce((sum, p) => sum + p.gesamt, 0);
     const zwischensumme = gesamtBewilligt + gesamtAUB;
     const zinv = zwischensumme * 0.0338;
     const gesamtbetrag = zwischensumme + zinv;
     const rechnungsbetragBA = Math.max(0, gesamtbetrag - pflegekassenBetrag);
-    
+
     const baZahltNurZINV = gesamtbetrag < pflegekassenBetrag;
     const finalRechnungsbetragBA = baZahltNurZINV ? zinv : rechnungsbetragBA;
+
+    // Debug logging for ZINV
+    console.log('🔍 ZINV Debug:', {
+      bewilligtePositionen: bewilligtePositionen.length,
+      gesamtBewilligt,
+      gesamtAUB,
+      zwischensumme,
+      zinv,
+      gesamtbetrag
+    });
     
     return {
       allePositionen: positionen,
@@ -1474,11 +1484,11 @@ export default function Home() {
                     type="text"
                     value={rechnungsnummer}
                     onChange={(e) => setRechnungsnummer(e.target.value)}
-                    placeholder="z.B. RG-2025-001"
+                    placeholder="z.B. RG-2025-001 (Optional)"
                     className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-800"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Wird nach dem Drucken automatisch zurückgesetzt
+                    Optional - Wird automatisch generiert wenn leer. Nach dem Drucken zurückgesetzt.
                   </p>
                 </div>
 
@@ -1487,15 +1497,13 @@ export default function Home() {
                   <div className="flex gap-3">
                     <button
                       onClick={() => handlePrintOrDownload('ba', 'print')}
-                      disabled={!rechnungsnummer.trim()}
-                      className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium"
                     >
                       🖨️ Drucken
                     </button>
                     <button
                       onClick={() => handlePrintOrDownload('ba', 'download')}
-                      disabled={!rechnungsnummer.trim()}
-                      className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 font-medium"
                     >
                       💾 Als PDF speichern
                     </button>
@@ -1507,15 +1515,13 @@ export default function Home() {
                   <div className="flex gap-3">
                     <button
                       onClick={() => handlePrintOrDownload('privat', 'print')}
-                      disabled={!rechnungsnummer.trim()}
-                      className="flex items-center gap-2 bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 font-medium"
                     >
                       🖨️ Drucken
                     </button>
                     <button
                       onClick={() => handlePrintOrDownload('privat', 'download')}
-                      disabled={!rechnungsnummer.trim()}
-                      className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-medium"
                     >
                       💾 Als PDF speichern
                     </button>
