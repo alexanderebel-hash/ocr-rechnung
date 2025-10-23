@@ -1,5 +1,6 @@
 import { parseExcelBewilligung, ParsedBewilligung } from './excelParser';
 import { getAllKlienten as getKlientenFromSupabase } from './supabase-client';
+import { loadBewilligungenForKlient, type BewilligteLeistung } from './bewilligungLoader';
 
 const bewilligungFiles = [
   'Bewilligung_Tschida_01_01_25-31_12_25.xlsx',
@@ -64,8 +65,61 @@ export async function loadAllKlienten(): Promise<Klient[]> {
     console.error('❌ Error loading from Supabase, using fallback:', error);
   }
 
+  // Try to load from CSV
+  try {
+    console.log('🔄 Attempting to load clients with CSV Bewilligungen...');
+    const klientenWithCSV = await loadKlientenWithCSVBewilligungen();
+    if (klientenWithCSV.length > 0) {
+      console.log(`✅ Loaded ${klientenWithCSV.length} clients with CSV Bewilligungen`);
+      return klientenWithCSV;
+    }
+  } catch (error) {
+    console.error('❌ Error loading CSV Bewilligungen, using fallback:', error);
+  }
+
   // Fallback to Excel parsing or static data
   return loadKlientenFromExcelOrFallback();
+}
+
+async function loadKlientenWithCSVBewilligungen(): Promise<Klient[]> {
+  const klientenWithBewilligungen: Klient[] = [];
+
+  for (const klient of fallbackKlienten) {
+    try {
+      // Extract last name from full name
+      const nachname = klient.name.split(',')[0]?.trim() || klient.name.split(' ').pop() || klient.name;
+
+      const csvBewilligungen = await loadBewilligungenForKlient(nachname);
+
+      if (csvBewilligungen.length > 0) {
+        // Convert CSV bewilligungen to Klient format
+        const leistungen = csvBewilligungen.map(b => ({
+          lkCode: b.lk_code.toUpperCase(),
+          menge: b.anzahl
+        }));
+
+        klientenWithBewilligungen.push({
+          ...klient,
+          bewilligungen: [
+            {
+              ...klient.bewilligungen[0],
+              leistungen: leistungen,
+              gueltig_von: csvBewilligungen[0].gueltig_von,
+              gueltig_bis: csvBewilligungen[0].gueltig_bis
+            }
+          ]
+        });
+      } else {
+        // Keep original if no CSV data found
+        klientenWithBewilligungen.push(klient);
+      }
+    } catch (error) {
+      console.error(`Error loading CSV for ${klient.name}:`, error);
+      klientenWithBewilligungen.push(klient);
+    }
+  }
+
+  return klientenWithBewilligungen;
 }
 
 async function loadKlientenFromExcelOrFallback(): Promise<Klient[]> {
