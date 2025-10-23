@@ -1,5 +1,5 @@
 import { parseExcelBewilligung, ParsedBewilligung } from './excelParser';
-import { getAllKlienten as getKlientenFromSupabase } from './supabase';
+import { getAllKlienten as getKlientenFromSupabase } from './supabase-client';
 
 const bewilligungFiles = [
   'Bewilligung_Tschida_01_01_25-31_12_25.xlsx',
