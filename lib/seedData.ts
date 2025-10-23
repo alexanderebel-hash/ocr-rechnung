@@ -1,5 +1,4 @@
 import { parseExcelBewilligung, ParsedBewilligung } from './excelParser';
-import { getAllKlienten as getKlientenFromSupabase } from './supabase-client';
 import { loadBewilligungenForKlient, type BewilligteLeistung } from './bewilligungLoader';
 
 const bewilligungFiles = [
@@ -50,35 +49,21 @@ export interface Klient {
 }
 
 export async function loadAllKlienten(): Promise<Klient[]> {
-  // Try to load from Supabase first
+  // Load from CSV - this is our primary data source now
   try {
-    console.log('🔄 Attempting to load clients from Supabase...');
-    const supabaseKlienten = await getKlientenFromSupabase();
-
-    if (supabaseKlienten && supabaseKlienten.length > 0) {
-      console.log(`✅ Loaded ${supabaseKlienten.length} clients from Supabase`);
-      return supabaseKlienten;
-    }
-
-    console.log('⚠️ No clients found in Supabase, falling back to local data');
-  } catch (error) {
-    console.error('❌ Error loading from Supabase, using fallback:', error);
-  }
-
-  // Try to load from CSV
-  try {
-    console.log('🔄 Attempting to load clients with CSV Bewilligungen...');
+    console.log('🔄 Loading clients with CSV Bewilligungen...');
     const klientenWithCSV = await loadKlientenWithCSVBewilligungen();
     if (klientenWithCSV.length > 0) {
       console.log(`✅ Loaded ${klientenWithCSV.length} clients with CSV Bewilligungen`);
       return klientenWithCSV;
     }
   } catch (error) {
-    console.error('❌ Error loading CSV Bewilligungen, using fallback:', error);
+    console.error('❌ Error loading CSV Bewilligungen:', error);
   }
 
-  // Fallback to Excel parsing or static data
-  return loadKlientenFromExcelOrFallback();
+  // Fallback to static data if CSV fails
+  console.log('⚠️ Using fallback static data');
+  return fallbackKlienten;
 }
 
 async function loadKlientenWithCSVBewilligungen(): Promise<Klient[]> {

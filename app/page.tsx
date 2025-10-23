@@ -5,43 +5,11 @@ import Hero from '@/components/Hero'
 import { KlientenDropdown } from '@/components/KlientenDropdown'
 import PDFUpload from '@/components/PDFUpload'
 import { InvoicePDF } from '@/components/InvoicePDF'
-// NEU: Supabase Komponenten für Archiv und Speichern
-import SaveButton from '@/components/SaveButton'
-import RechnungArchiv from '@/components/RechnungArchiv'
-import { type Client, type Bewilligung } from '@/lib/supabase'
 
 export default function Home() {
   const [selectedKlient, setSelectedKlient] = useState<any>(null)
   const [bewilligung, setBewilligung] = useState<any>(null)
   const [invoiceData, setInvoiceData] = useState<any>(null)
-  const [showArchive, setShowArchive] = useState(false)
-
-  // Konvertiere selectedKlient zu Client Type für die neuen Komponenten
-  const clientForSupabase: Client | null = selectedKlient ? {
-    id: selectedKlient.id,
-    // Split name into vorname and nachname if needed
-    vorname: selectedKlient.vorname || selectedKlient.name?.split(' ')[0] || '',
-    nachname: selectedKlient.nachname || selectedKlient.name?.split(' ').slice(1).join(' ') || '',
-    versichertennummer: selectedKlient.versichertennummer || '',
-    pflegegrad: selectedKlient.pflegegrad,
-    bezirksamt: selectedKlient.bezirksamt || selectedKlient.stadtteil || '',
-    ik_nummer: selectedKlient.ik_nummer || '461104096',
-    created_at: selectedKlient.created_at || new Date().toISOString(),
-    updated_at: selectedKlient.updated_at || new Date().toISOString()
-  } : null
-
-  const bewilligungForSupabase: Bewilligung | null = bewilligung ? {
-    id: bewilligung.id,
-    client_id: bewilligung.client_id || selectedKlient?.id || '',
-    genehmigungsnummer: bewilligung.genehmigungsnummer || '',
-    gueltig_von: bewilligung.gueltig_von,
-    gueltig_bis: bewilligung.gueltig_bis,
-    bezirksamt: bewilligung.bezirksamt || selectedKlient?.stadtteil || '',
-    leistungen: bewilligung.leistungen || [],
-    notizen: bewilligung.notizen,
-    created_at: bewilligung.created_at || new Date().toISOString(),
-    updated_at: bewilligung.updated_at || new Date().toISOString()
-  } : null
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -49,19 +17,11 @@ export default function Home() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
         
-        {/* Klienten-Auswahl + Archiv Button */}
+        {/* Klienten-Auswahl */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Klient auswählen
-            </h2>
-            <button
-              onClick={() => setShowArchive(!showArchive)}
-              className="px-4 py-2 text-sm bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition-colors font-medium"
-            >
-              {showArchive ? '📄 Zurück zur Korrektur' : '📚 Archiv anzeigen'}
-            </button>
-          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Klient auswählen
+          </h2>
 
           <KlientenDropdown
             onSelect={(klient) => {
@@ -105,62 +65,34 @@ export default function Home() {
           )}
         </div>
 
-        {/* Archiv ODER Upload/Korrektur */}
-        {showArchive ? (
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              📚 Gespeicherte Korrekturrechnungen
-            </h2>
-            <RechnungArchiv client={clientForSupabase} />
-          </div>
-        ) : (
-          <>
-            {/* PDF Upload */}
-            <PDFUpload
-              type="rechnung"
-              onDataExtracted={(data) => {
-                setInvoiceData(data)
-                console.log('Rechnung analysiert:', data)
-              }}
-            />
+        {/* PDF Upload */}
+        <PDFUpload
+          type="rechnung"
+          onDataExtracted={(data) => {
+            setInvoiceData(data)
+            console.log('Rechnung analysiert:', data)
+          }}
+        />
 
-            {/* Korrekturrechnung + Speichern Button */}
-            {invoiceData && (
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-semibold text-gray-900">
-                    Korrekturrechnung
-                  </h2>
-                  
-                  {/* NEU: Speichern Button */}
-                  <SaveButton
-                    client={clientForSupabase}
-                    bewilligung={bewilligungForSupabase}
-                    rechnungsdaten={invoiceData}
-                    onSaved={(rechnungId) => {
-                      console.log('✅ Rechnung gespeichert:', rechnungId)
-                      alert('✅ Rechnung erfolgreich in der Datenbank gespeichert!')
-                      // Zum Archiv wechseln
-                      setShowArchive(true)
-                    }}
-                  />
-                </div>
-                
-                <InvoicePDF data={invoiceData} />
-              </div>
-            )}
-          </>
+        {/* Korrekturrechnung */}
+        {invoiceData && (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+              Korrekturrechnung
+            </h2>
+
+            <InvoicePDF data={invoiceData} />
+          </div>
         )}
 
         {/* Info Box */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
           <h3 className="font-semibold text-blue-900 mb-2">ℹ️ Workflow:</h3>
           <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
-            <li>Klient auswählen → Bewilligung wird automatisch geladen</li>
+            <li>Klient auswählen → Bewilligung wird automatisch aus CSV geladen</li>
             <li>Rechnung (PDF) hochladen → Claude analysiert via OCR</li>
             <li>Korrekturrechnung wird gemäß Bewilligung erstellt</li>
-            <li><strong>NEU:</strong> Klicke "Rechnung speichern" → PDF + Daten in Supabase</li>
-            <li><strong>NEU:</strong> Alle Rechnungen im Archiv abrufbar</li>
+            <li>PDF herunterladen und verwenden</li>
           </ol>
         </div>
       </div>
