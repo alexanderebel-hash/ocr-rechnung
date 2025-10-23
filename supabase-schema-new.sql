@@ -91,8 +91,8 @@ CREATE TABLE IF NOT EXISTS pflegekassen (
 -- 6. BEWILLIGUNGEN (Authorizations)
 -- =====================================================
 CREATE TABLE IF NOT EXISTS bewilligungen (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  bewilligungs_id TEXT UNIQUE,
+  id UUID DEFAULT gen_random_uuid(),
+  bewilligungs_id TEXT PRIMARY KEY,
   klienten_id UUID NOT NULL REFERENCES klienten(id) ON DELETE CASCADE,
   bezirksamt_id UUID REFERENCES bezirksaemter(id),
   pflegekasse_id UUID REFERENCES pflegekassen(id),
