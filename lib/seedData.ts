@@ -1,5 +1,5 @@
 import { parseExcelBewilligung, ParsedBewilligung } from './excelParser';
-import { loadBewilligungenForKlient, type BewilligteLeistung } from './bewilligungLoader';
+import { loadBewilligungForKlient, getAllKlientenNames } from './bewilligungLoader';
 
 const bewilligungFiles = [
   'Bewilligung_Tschida_01_01_25-31_12_25.xlsx',
@@ -49,59 +49,70 @@ export interface Klient {
 }
 
 export async function loadAllKlienten(): Promise<Klient[]> {
-  // Load from CSV - this is our primary data source now
+  // Load from Excel files - this is our primary data source now
   try {
-    console.log('🔄 Loading clients with CSV Bewilligungen...');
-    const klientenWithCSV = await loadKlientenWithCSVBewilligungen();
-    if (klientenWithCSV.length > 0) {
-      console.log(`✅ Loaded ${klientenWithCSV.length} clients with CSV Bewilligungen`);
-      return klientenWithCSV;
+    console.log('🔄 Loading clients with Excel Bewilligungen...');
+    const klientenWithExcel = await loadKlientenWithExcelBewilligungen();
+    if (klientenWithExcel.length > 0) {
+      console.log(`✅ Loaded ${klientenWithExcel.length} clients with Excel Bewilligungen`);
+      return klientenWithExcel;
     }
   } catch (error) {
-    console.error('❌ Error loading CSV Bewilligungen:', error);
+    console.error('❌ Error loading Excel Bewilligungen:', error);
   }
 
-  // Fallback to static data if CSV fails
+  // Fallback to static data if Excel fails
   console.log('⚠️ Using fallback static data');
   return fallbackKlienten;
 }
 
-async function loadKlientenWithCSVBewilligungen(): Promise<Klient[]> {
+async function loadKlientenWithExcelBewilligungen(): Promise<Klient[]> {
   const klientenWithBewilligungen: Klient[] = [];
+  const klientenNames = getAllKlientenNames();
 
-  for (const klient of fallbackKlienten) {
+  for (const nachname of klientenNames) {
     try {
-      // Extract last name from full name
-      const nachname = klient.name.split(',')[0]?.trim() || klient.name.split(' ').pop() || klient.name;
+      const excelData = await loadBewilligungForKlient(nachname);
 
-      const csvBewilligungen = await loadBewilligungenForKlient(nachname);
-
-      if (csvBewilligungen.length > 0) {
-        // Convert CSV bewilligungen to Klient format
-        const leistungen = csvBewilligungen.map(b => ({
-          lkCode: b.lk_code.toUpperCase(),
-          menge: b.je_monat, // Use monthly value
-          jeWoche: b.je_woche // Also store weekly value
+      if (excelData) {
+        // Convert Excel data to Klient format
+        const leistungen = excelData.leistungen.map((l: any) => ({
+          lkCode: l.lk_code.toUpperCase(),
+          menge: l.je_monat,
+          jeWoche: l.je_woche,
+          einzelpreis: l.einzelpreis
         }));
 
         klientenWithBewilligungen.push({
-          ...klient,
+          id: generateId(),
+          name: nachname,
+          pflegegrad: excelData.klient.pflegegrad,
+          adresse: excelData.klient.adresse,
+          pflegedienst: 'DomusVita Gesundheit GmbH',
+          standort: excelData.klient.standort || 'Kreuzberg',
+          stadtteil: excelData.klient.stadtteil || 'Kreuzberg / Sievos',
+          pflegedienst_adresse: 'Waldemarstraße 10 A, 10999 Berlin',
           bewilligungen: [
             {
-              ...klient.bewilligungen[0],
+              id: generateId(),
+              gueltig_von: excelData.zeitraum.von,
+              gueltig_bis: excelData.zeitraum.bis,
+              status: 'aktiv',
               leistungen: leistungen,
-              gueltig_von: csvBewilligungen[0].gueltig_von,
-              gueltig_bis: csvBewilligungen[0].gueltig_bis
-            }
-          ]
+              pflegedienst: {
+                name: 'DomusVita Gesundheit GmbH',
+                standort: 'Kreuzberg',
+                adresse: 'Waldemarstraße 10 A, 10999 Berlin',
+                telefon: '030/6120152-0',
+                email: 'kreuzberg@domusvita.de',
+                ik: '461104096',
+              },
+            },
+          ],
         });
-      } else {
-        // Keep original if no CSV data found
-        klientenWithBewilligungen.push(klient);
       }
     } catch (error) {
-      console.error(`Error loading CSV for ${klient.name}:`, error);
-      klientenWithBewilligungen.push(klient);
+      console.error(`Error loading Excel for ${nachname}:`, error);
     }
   }
 
