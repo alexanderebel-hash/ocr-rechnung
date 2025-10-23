@@ -12,6 +12,9 @@ export function KlientenDropdown({ onSelect, onNewKlient }: KlientenDropdownProp
   const [klienten, setKlienten] = useState<Klient[]>(fallbackKlienten);
   const [selectedId, setSelectedId] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedLeistung, setSelectedLeistung] = useState<any>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editedMenge, setEditedMenge] = useState<number>(0);
 
   useEffect(() => {
     async function load() {
@@ -172,26 +175,134 @@ export function KlientenDropdown({ onSelect, onNewKlient }: KlientenDropdownProp
               Bewilligte Leistungen ({selectedKlient.bewilligungen[0]?.leistungen.length || 0})
             </h3>
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {selectedKlient.bewilligungen[0]?.leistungen.map((leistung: any, idx: number) => (
-                <div
-                  key={idx}
-                  className="flex justify-between items-center p-2 bg-white rounded border border-gray-200 hover:border-blue-300 transition-colors"
-                >
-                  <div className="flex-1">
-                    <span className="font-mono text-sm font-semibold text-blue-600">
-                      {leistung.lkCode}
-                    </span>
+              {selectedKlient.bewilligungen[0]?.leistungen.map((leistung: any, idx: number) => {
+                const proMonat = leistung.menge;
+                const proWoche = Math.round((proMonat / 4) * 10) / 10; // Round to 1 decimal
+
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      setSelectedLeistung(leistung);
+                      setEditedMenge(proMonat);
+                      setShowModal(true);
+                    }}
+                    className="p-3 bg-white rounded border border-gray-200 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <span className="font-mono text-base font-semibold text-blue-600">
+                          {leistung.lkCode}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-bold text-gray-900 bg-blue-50 px-2 py-1 rounded">
+                          {proMonat}x / Monat
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <span className="bg-gray-100 px-2 py-1 rounded">
+                        📅 {proWoche}x / Woche
+                      </span>
+                      <span className="text-gray-400">•</span>
+                      <span className="bg-green-50 text-green-700 px-2 py-1 rounded font-medium">
+                        ✓ Klicken zum Übernehmen
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-sm font-medium text-gray-900">
-                      {leistung.menge}x
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {(!selectedKlient.bewilligungen[0]?.leistungen || selectedKlient.bewilligungen[0].leistungen.length === 0) && (
                 <p className="text-sm text-gray-500 italic">Keine Leistungen bewilligt</p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Leistung übernehmen oder bearbeiten */}
+      {showModal && selectedLeistung && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-start justify-between mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">
+                Leistung bearbeiten
+              </h3>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Leistung Info */}
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-mono text-lg font-bold text-blue-600">
+                    {selectedLeistung.lkCode}
+                  </span>
+                  <span className="text-sm text-gray-600">
+                    Bewilligt: {selectedLeistung.menge}x / Monat
+                  </span>
+                </div>
+                <div className="text-xs text-gray-600">
+                  ≈ {Math.round((selectedLeistung.menge / 4) * 10) / 10}x / Woche
+                </div>
+              </div>
+
+              {/* Menge bearbeiten */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Menge pro Monat:
+                </label>
+                <input
+                  type="number"
+                  value={editedMenge}
+                  onChange={(e) => setEditedMenge(parseFloat(e.target.value) || 0)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  step="0.1"
+                  min="0"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Pro Woche: ≈ {Math.round((editedMenge / 4) * 10) / 10}x
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    // TODO: Bewilligung übernehmen (Original-Menge)
+                    console.log('✓ Übernommen:', selectedLeistung.lkCode, selectedLeistung.menge);
+                    setShowModal(false);
+                  }}
+                  className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  ✓ Bewilligung übernehmen
+                </button>
+                <button
+                  onClick={() => {
+                    // TODO: Angepasste Menge übernehmen
+                    console.log('✏️ Angepasst:', selectedLeistung.lkCode, editedMenge);
+                    setShowModal(false);
+                  }}
+                  className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  ✏️ Änderung übernehmen
+                </button>
+              </div>
+
+              <button
+                onClick={() => setShowModal(false)}
+                className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
+              >
+                Abbrechen
+              </button>
             </div>
           </div>
         </div>
