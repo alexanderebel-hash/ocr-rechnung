@@ -1,8 +1,8 @@
 export interface BewilligteLeistung {
   lk_code: string;
   beschreibung: string;
-  anzahl: number;
-  pflegegrad: number;
+  je_woche: number;
+  je_monat: number;
   gueltig_von: string;
   gueltig_bis: string;
 }
@@ -34,8 +34,8 @@ export async function loadBewilligungenForKlient(nachname: string): Promise<Bewi
         bewilligungen.push({
           lk_code: values[1]?.trim() || '',
           beschreibung: values[2]?.trim() || '',
-          anzahl: parseFloat(values[3]) || 0,
-          pflegegrad: parseInt(values[4]) || 0,
+          je_woche: parseFloat(values[3]) || 0,
+          je_monat: parseFloat(values[4]) || 0,
           gueltig_von: values[5]?.trim() || '',
           gueltig_bis: values[6]?.trim() || ''
         });

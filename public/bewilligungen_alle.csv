@@ -1,157 +1,178 @@
-nachname,lk_code,beschreibung,anzahl,pflegegrad,gueltig_von,gueltig_bis
-Alijevic,LK02,Kleine Körperpflege,1.0,3,2025-01-01,2025-12-31
-Alijevic,LK07a,Darm- und Blasenentleerung,7.0,3,2025-01-01,2025-12-31
-Alijevic,LK07b,Darm- und Blasenentleerung erweitert,1.0,3,2025-01-01,2025-12-31
-Alijevic,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Alijevic,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Alijevic,LK13,Einkaufen,0.25,3,2025-01-01,2025-12-31
-Block,LK02,Kleine Körperpflege,5.0,3,2025-01-01,2025-12-31
-Block,LK03a,Erweiterte große Körperpflege,2.0,3,2025-01-01,2025-12-31
-Block,LK03b,Erweiterte große Körperpflege m. Baden,2.0,3,2025-01-01,2025-12-31
-Block,LK07a,Darm- und Blasenentleerung,7.0,3,2025-01-01,2025-12-31
-Block,LK07b,Darm- und Blasenentleerung erweitert,7.0,3,2025-01-01,2025-12-31
-Block,LK11b,Große Reinigung der Wohnung,2.0,3,2025-01-01,2025-12-31
-Block,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Block,LK13,Einkaufen,1.0,3,2025-01-01,2025-12-31
-Block,LK15,Zubereitung kleine Mahlzeit,7.0,3,2025-01-01,2025-12-31
-Block,LK17a,Einsatzpauschale,5.0,3,2025-01-01,2025-12-31
-Block,LK17b,Einsatzpauschale WE,2.0,3,2025-01-01,2025-12-31
-Bollweber,LK02,Kleine Körperpflege,9.0,3,2025-01-01,2025-12-31
-Bollweber,LK03b,Erweiterte große Körperpflege m. Baden,4.0,3,2025-01-01,2025-12-31
-Bollweber,LK11b,Große Reinigung der Wohnung,4.0,3,2025-01-01,2025-12-31
-Bollweber,LK12,Wechseln u. Waschen der Kleidung,4.0,3,2025-01-01,2025-12-31
-Bollweber,LK13,Einkaufen,4.0,3,2025-01-01,2025-12-31
-Bollweber,LK15,Zubereitung kleine Mahlzeit,30.0,3,2025-01-01,2025-12-31
-Budach,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Budach,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Budach,LK17a,Einsatzpauschale,1.0,3,2025-01-01,2025-12-31
-Dreßler,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Ewert,LK02,Kleine Körperpflege,6.0,3,2025-01-01,2025-12-31
-Ewert,LK04,Große Körperpflege,1.0,3,2025-01-01,2025-12-31
-Ewert,LK07a,Darm- und Blasenentleerung,14.0,3,2025-01-01,2025-12-31
-Ewert,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Ewert,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Fialkowski,LK04,Große Körperpflege,2.0,3,2025-01-01,2025-12-31
-Fialkowski,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Fialkowski,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Fialkowski,LK17a,Einsatzpauschale,2.0,3,2025-01-01,2025-12-31
-Fritzsche,LK02,Kleine Körperpflege,5.0,3,2025-01-01,2025-12-31
-Fritzsche,LK04,Große Körperpflege,4.0,3,2025-01-01,2025-12-31
-Fritzsche,LK07a,Darm- und Blasenentleerung,7.0,3,2025-01-01,2025-12-31
-Fritzsche,LK11a,Kleine Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Fritzsche,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Fritzsche,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Fritzsche,LK13,Einkaufen,1.0,3,2025-01-01,2025-12-31
-Fritzsche,LK15,Zubereitung kleine Mahlzeit,7.0,3,2025-01-01,2025-12-31
-Fritzsche,LK17b,Einsatzpauschale WE,2.0,3,2025-01-01,2025-12-31
-Grapenhin,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Grapenhin,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Grapenhin,LK13,Einkaufen,1.0,3,2025-01-01,2025-12-31
-Grapenhin,LK17a,Einsatzpauschale,1.0,3,2025-01-01,2025-12-31
-Grapenhin,LK20_HH,Häusliche Betreuung §124 SGB XI (Haushaltsbuch),1.0,3,2025-01-01,2025-12-31
-Gullatz,LK02,Kleine Körperpflege,1.0,3,2025-01-01,2025-12-31
-Gullatz,LK04,Große Körperpflege,1.0,3,2025-01-01,2025-12-31
-Gullatz,LK07a,Darm- und Blasenentleerung,2.0,3,2025-01-01,2025-12-31
-Gullatz,LK07b,Darm- und Blasenentleerung erweitert,12.0,3,2025-01-01,2025-12-31
-Gullatz,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Gullatz,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Gullatz,LK15,Zubereitung kleine Mahlzeit,21.0,3,2025-01-01,2025-12-31
-Hennings,LK04,Große Körperpflege,2.0,3,2025-01-01,2025-12-31
-Hennings,LK07a,Darm- und Blasenentleerung,7.0,3,2025-01-01,2025-12-31
-Hennings,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Hennings,LK15,Zubereitung kleine Mahlzeit,7.0,3,2025-01-01,2025-12-31
-Hennings,LK17a,Einsatzpauschale,5.0,3,2025-01-01,2025-12-31
-Hennings,LK17b,Einsatzpauschale WE,2.0,3,2025-01-01,2025-12-31
-Hensler,LK03b,Erweiterte große Körperpflege m. Baden,1.0,3,2025-01-01,2025-12-31
-Hensler,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Hensler,LK14,Zubereitung warme Mahlzeit,3.0,3,2025-01-01,2025-12-31
-Hensler,LK15,Zubereitung kleine Mahlzeit,4.0,3,2025-01-01,2025-12-31
-Hensler,LK17a,Einsatzpauschale,5.0,3,2025-01-01,2025-12-31
-Hensler,LK17b,Einsatzpauschale WE,2.0,3,2025-01-01,2025-12-31
-Ko,LK02,Kleine Körperpflege,3.0,3,2025-01-01,2025-12-31
-Ko,LK04,Große Körperpflege,1.0,3,2025-01-01,2025-12-31
-Ko,LK07a,Darm- und Blasenentleerung,7.0,3,2025-01-01,2025-12-31
-Ko,LK11a,Kleine Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Ko,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Ko,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Ko,LK13,Einkaufen,1.0,3,2025-01-01,2025-12-31
-Ko,LK15,Zubereitung kleine Mahlzeit,7.0,3,2025-01-01,2025-12-31
-Konjetzky,LK02,Kleine Körperpflege,1.0,3,2025-01-01,2025-12-31
-Konjetzky,LK04,Große Körperpflege,1.0,3,2025-01-01,2025-12-31
-Konjetzky,LK07a,Darm- und Blasenentleerung,2.0,3,2025-01-01,2025-12-31
-Konjetzky,LK07b,Darm- und Blasenentleerung erweitert,12.0,3,2025-01-01,2025-12-31
-Konjetzky,LK11a,Kleine Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Konjetzky,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Konjetzky,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Konjetzky,LK13,Einkaufen,1.0,3,2025-01-01,2025-12-31
-Konjetzky,LK15,Zubereitung kleine Mahlzeit,7.0,3,2025-01-01,2025-12-31
-Mankowski,LK02,Kleine Körperpflege,6.0,3,2025-01-01,2025-12-31
-Mankowski,LK04,Große Körperpflege,1.0,3,2025-01-01,2025-12-31
-Mankowski,LK07a,Darm- und Blasenentleerung,7.0,3,2025-01-01,2025-12-31
-Mankowski,LK07b,Darm- und Blasenentleerung erweitert,14.0,3,2025-01-01,2025-12-31
-Mankowski,LK11a,Kleine Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Mankowski,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Mankowski,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Mankowski,LK13,Einkaufen,1.0,3,2025-01-01,2025-12-31
-Nakoinz,LK04,Große Körperpflege,2.0,3,2025-01-01,2025-12-31
-Nakoinz,LK07a,Darm- und Blasenentleerung,2.0,3,2025-01-01,2025-12-31
-Nakoinz,LK07b,Darm- und Blasenentleerung erweitert,19.0,3,2025-01-01,2025-12-31
-Nakoinz,LK11a,Kleine Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Nakoinz,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Nakoinz,LK12,Wechseln u. Waschen der Kleidung,2.0,3,2025-01-01,2025-12-31
-Nakoinz,LK13,Einkaufen,1.0,3,2025-01-01,2025-12-31
-Nakoinz,LK15,Zubereitung kleine Mahlzeit,21.0,3,2025-01-01,2025-12-31
-Ortmann,LK02,Kleine Körperpflege,5.0,3,2025-01-01,2025-12-31
-Ortmann,LK04,Große Körperpflege,2.0,3,2025-01-01,2025-12-31
-Ortmann,LK07a,Darm- und Blasenentleerung,7.0,3,2025-01-01,2025-12-31
-Ortmann,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Ortmann,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Ortmann,LK15,Zubereitung kleine Mahlzeit,7.0,3,2025-01-01,2025-12-31
-Ortmann,LK17a,Einsatzpauschale,5.0,3,2025-01-01,2025-12-31
-Ortmann,LK17b,Einsatzpauschale WE,2.0,3,2025-01-01,2025-12-31
-Plu,LK02,Kleine Körperpflege,2.0,3,2025-01-01,2025-12-31
-Plu,LK04,Große Körperpflege,1.0,3,2025-01-01,2025-12-31
-Plu,LK11a,Kleine Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Plu,LK11b,Große Reinigung der Wohnung,2.0,3,2025-01-01,2025-12-31
-Plu,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Plu,LK13,Einkaufen,1.0,3,2025-01-01,2025-12-31
-Rudek,LK02,Kleine Körperpflege,4.0,3,2025-01-01,2025-12-31
-Rudek,LK04,Große Körperpflege,3.0,3,2025-01-01,2025-12-31
-Rudek,LK07a,Darm- und Blasenentleerung,14.0,3,2025-01-01,2025-12-31
-Rudek,LK07b,Darm- und Blasenentleerung erweitert,14.0,3,2025-01-01,2025-12-31
-Rudek,LK08a,Hilfestelll. beim Verl.o.Wiederaufs. d. Wohng.,1.0,3,2025-01-01,2025-12-31
-Rudek,LK08b,Hilfestellung beim Wiederaufsuchen der Wohnung,1.0,3,2025-01-01,2025-12-31
-Rudek,LK09,Begleitung ausser Haus,1.0,3,2025-01-01,2025-12-31
-Rudek,LK11a,Kleine Reinigung der Wohnung,3.0,3,2025-01-01,2025-12-31
-Rudek,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Rudek,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Rudek,LK13,Einkaufen,1.0,3,2025-01-01,2025-12-31
-Rudek,LK15,Zubereitung kleine Mahlzeit,21.0,3,2025-01-01,2025-12-31
-Schlotzhauer,LK11a,Kleine Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Schlotzhauer,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Schlotzhauer,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Schlotzhauer,LK14,Zubereitung warme Mahlzeit,3.0,3,2025-01-01,2025-12-31
-Schlotzhauer,LK15,Zubereitung kleine Mahlzeit,18.0,3,2025-01-01,2025-12-31
-Schlotzhauer,LK17a,Einsatzpauschale,5.0,3,2025-01-01,2025-12-31
-Schlotzhauer,LK17b,Einsatzpauschale WE,2.0,3,2025-01-01,2025-12-31
-Schmideder,LK02,Kleine Körperpflege,1.0,3,2025-01-01,2025-12-31
-Schmideder,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Schmideder,LK13,Einkaufen,1.0,3,2025-01-01,2025-12-31
-Schmideder,LK17a,Einsatzpauschale,5.0,3,2025-01-01,2025-12-31
-Schmideder,LK17b,Einsatzpauschale WE,2.0,3,2025-01-01,2025-12-31
-Sommermann,LK02,Kleine Körperpflege,1.0,3,2025-01-01,2025-12-31
-Sommermann,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Sommermann,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Sommermann,LK13,Einkaufen,1.0,3,2025-01-01,2025-12-31
-Sommermann,LK15,Zubereitung kleine Mahlzeit,21.0,3,2025-01-01,2025-12-31
-Sweidan,LK04,Große Körperpflege,2.0,3,2025-01-01,2025-12-31
-Sweidan,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Sweidan,LK15,Zubereitung kleine Mahlzeit,7.0,3,2025-01-01,2025-12-31
-Tschida,LK02,Kleine Körperpflege,13.0,3,2025-01-01,2025-12-31
-Tschida,LK04,Große Körperpflege,1.0,3,2025-01-01,2025-12-31
-Tschida,LK07a,Darm- und Blasenentleerung,7.0,3,2025-01-01,2025-12-31
-Tschida,LK11a,Kleine Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Tschida,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Tschida,LK12,Wechseln u. Waschen der Kleidung,2.0,3,2025-01-01,2025-12-31
-Tschida,LK13,Einkaufen,1.0,3,2025-01-01,2025-12-31
-Tschida,LK15,Zubereitung kleine Mahlzeit,14.0,3,2025-01-01,2025-12-31
+nachname,lk_code,beschreibung,je_woche,je_monat,gueltig_von,gueltig_bis
+Alijevic,LK02,Kleine Körperpflege,1,4,2025-01-01,2025-12-31
+Alijevic,LK07a,Darm- und Blasenentleerung,7,30,2025-01-01,2025-12-31
+Alijevic,LK07b,Darm- und Blasenentleerung erweitert,1,4,2025-01-01,2025-12-31
+Alijevic,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Alijevic,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Alijevic,LK13,Einkaufen,0.25,1,2025-01-01,2025-12-31
+Block,LK02,Kleine Körperpflege,5,20,2025-01-01,2025-12-31
+Block,LK03a,Erweiterte große Körperpflege,2,8,2025-01-01,2025-12-31
+Block,LK03b,Erweiterte große Körperpflege m. Baden,2,8,2025-01-01,2025-12-31
+Block,LK07a,Darm- und Blasenentleerung,7,28,2025-01-01,2025-12-31
+Block,LK07b,Darm- und Blasenentleerung erweitert,7,28,2025-01-01,2025-12-31
+Block,LK11b,Große Reinigung der Wohnung,2,8,2025-01-01,2025-12-31
+Block,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Block,LK13,Einkaufen,1,4,2025-01-01,2025-12-31
+Block,LK15,Zubereitung kleine Mahlzeit,7,28,2025-01-01,2025-12-31
+Block,LK17a,Einsatzpauschale,5,20,2025-01-01,2025-12-31
+Block,LK17b,Einsatzpauschale WE,2,8,2025-01-01,2025-12-31
+Bollweber,LK02,Kleine Körperpflege,2,9,2025-01-01,2025-12-31
+Bollweber,LK03b,Erweiterte große Körperpflege m. Baden,1,4,2025-01-01,2025-12-31
+Bollweber,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Bollweber,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Bollweber,LK13,Einkaufen,1,4,2025-01-01,2025-12-31
+Bollweber,LK15,Zubereitung kleine Mahlzeit,7,30,2025-01-01,2025-12-31
+Bollweber,LK20_HH,Häusliche Betreuung §124 SGB XI (Haushaltsbuch),,1,2025-01-01,2025-12-31
+Budach,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Budach,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Budach,LK17a,Einsatzpauschale,1,4,2025-01-01,2025-12-31
+Dreßler,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Dreßler,LK12,Wechseln u. Waschen der Kleidung,,2,2025-01-01,2025-12-31
+Ewert,LK02,Kleine Körperpflege,6,24,2025-01-01,2025-12-31
+Ewert,LK04,Große Körperpflege,1,4,2025-01-01,2025-12-31
+Ewert,LK07a,Darm- und Blasenentleerung,14,56,2025-01-01,2025-12-31
+Ewert,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Ewert,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Ewert,LK13,Einkaufen,,1,2025-01-01,2025-12-31
+Ewert,LK20_HH,Häusliche Betreuung §124 SGB XI (Haushaltsbuch),,1,2025-01-01,2025-12-31
+Fialkowski,LK04,Große Körperpflege,2,8,2025-01-01,2025-12-31
+Fialkowski,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Fialkowski,LK12,Wechseln u. Waschen der Kleidung,1,2,2025-01-01,2025-12-31
+Fialkowski,LK13,Einkaufen,,1,2025-01-01,2025-12-31
+Fialkowski,LK20_HH,Häusliche Betreuung §124 SGB XI (Haushaltsbuch),,4,2025-01-01,2025-12-31
+Fritzsche,LK02,Kleine Körperpflege,5,20,2025-01-01,2025-12-31
+Fritzsche,LK04,Große Körperpflege,4,8,2025-01-01,2025-12-31
+Fritzsche,LK07a,Darm- und Blasenentleerung,7,28,2025-01-01,2025-12-31
+Fritzsche,LK11a,Kleine Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Fritzsche,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Fritzsche,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Fritzsche,LK13,Einkaufen,1,4,2025-01-01,2025-12-31
+Fritzsche,LK15,Zubereitung kleine Mahlzeit,7,28,2025-01-01,2025-12-31
+Fritzsche,LK17b,Einsatzpauschale WE,2,8,2025-01-01,2025-12-31
+Grapenhin,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Grapenhin,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Grapenhin,LK13,Einkaufen,1,4,2025-01-01,2025-12-31
+Grapenhin,LK17a,Einsatzpauschale,1,4,2025-01-01,2025-12-31
+Grapenhin,LK20_HH,Häusliche Betreuung §124 SGB XI (Haushaltsbuch),1,4,2025-01-01,2025-12-31
+Gullatz,LK02,Kleine Körperpflege,1,4,2025-01-01,2025-12-31
+Gullatz,LK04,Große Körperpflege,1,4,2025-01-01,2025-12-31
+Gullatz,LK07a,Darm- und Blasenentleerung,2,9,2025-01-01,2025-12-31
+Gullatz,LK07b,Darm- und Blasenentleerung erweitert,12,52,2025-01-01,2025-12-31
+Gullatz,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Gullatz,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Gullatz,LK13,Einkaufen,,1,2025-01-01,2025-12-31
+Gullatz,LK15,Zubereitung kleine Mahlzeit,21,91,2025-01-01,2025-12-31
+Hennings,LK04,Große Körperpflege,2,8,2025-01-01,2025-12-31
+Hennings,LK07a,Darm- und Blasenentleerung,7,28,2025-01-01,2025-12-31
+Hennings,LK11a,Kleine Reinigung der Wohnung,,1,2025-01-01,2025-12-31
+Hennings,LK11b,Große Reinigung der Wohnung,,1,2025-01-01,2025-12-31
+Hennings,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Hennings,LK15,Zubereitung kleine Mahlzeit,7,28,2025-01-01,2025-12-31
+Hennings,LK17a,Einsatzpauschale,5,20,2025-01-01,2025-12-31
+Hennings,LK17b,Einsatzpauschale WE,2,8,2025-01-01,2025-12-31
+Hensler,LK03b,Erweiterte große Körperpflege m. Baden,1,4,2025-01-01,2025-12-31
+Hensler,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Hensler,LK12,Wechseln u. Waschen der Kleidung,,2,2025-01-01,2025-12-31
+Hensler,LK14,Zubereitung warme Mahlzeit,3,12,2025-01-01,2025-12-31
+Hensler,LK15,Zubereitung kleine Mahlzeit,4,16,2025-01-01,2025-12-31
+Hensler,LK17a,Einsatzpauschale,5,20,2025-01-01,2025-12-31
+Hensler,LK17b,Einsatzpauschale WE,2,8,2025-01-01,2025-12-31
+Hensler,LK20_HH,Häusliche Betreuung §124 SGB XI (Haushaltsbuch),,1,2025-01-01,2025-12-31
+Köpke,LK02,Kleine Körperpflege,3,13,2025-01-01,2025-12-31
+Köpke,LK03b,Erweiterte große Körperpflege m. Baden,,,2025-01-01,2025-12-31
+Köpke,LK04,Große Körperpflege,1,4,2025-01-01,2025-12-31
+Köpke,LK07a,Darm- und Blasenentleerung,7,30,2025-01-01,2025-12-31
+Köpke,LK11a,Kleine Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Köpke,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Köpke,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Köpke,LK13,Einkaufen,1,4,2025-01-01,2025-12-31
+Köpke,LK15,Zubereitung kleine Mahlzeit,7,30,2025-01-01,2025-12-31
+Konjetzky,LK02,Kleine Körperpflege,1,4,2025-01-01,2025-12-31
+Konjetzky,LK03b,Erweiterte große Körperpflege m. Baden,,,2025-01-01,2025-12-31
+Konjetzky,LK04,Große Körperpflege,1,4,2025-01-01,2025-12-31
+Konjetzky,LK07a,Darm- und Blasenentleerung,2,9,2025-01-01,2025-12-31
+Konjetzky,LK07b,Darm- und Blasenentleerung erweitert,12,52,2025-01-01,2025-12-31
+Konjetzky,LK11a,Kleine Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Konjetzky,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Konjetzky,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Konjetzky,LK13,Einkaufen,1,4,2025-01-01,2025-12-31
+Konjetzky,LK15,Zubereitung kleine Mahlzeit,7,30,2025-01-01,2025-12-31
+Mankowski,LK02,Kleine Körperpflege,6,26,2025-01-01,2025-12-31
+Mankowski,LK04,Große Körperpflege,1,4,2025-01-01,2025-12-31
+Mankowski,LK07a,Darm- und Blasenentleerung,7,30,2025-01-01,2025-12-31
+Mankowski,LK07b,Darm- und Blasenentleerung erweitert,14,61,2025-01-01,2025-12-31
+Mankowski,LK11a,Kleine Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Mankowski,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Mankowski,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Mankowski,LK13,Einkaufen,1,4,2025-01-01,2025-12-31
+Mankowski,LK20_HH,Häusliche Betreuung §124 SGB XI (Haushaltsbuch),,1,2025-01-01,2025-12-31
+Nakoinz,LK04,Große Körperpflege,2,9,2025-01-01,2025-12-31
+Nakoinz,LK07a,Darm- und Blasenentleerung,2,9,2025-01-01,2025-12-31
+Nakoinz,LK07b,Darm- und Blasenentleerung erweitert,19,83,2025-01-01,2025-12-31
+Nakoinz,LK11a,Kleine Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Nakoinz,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Nakoinz,LK12,Wechseln u. Waschen der Kleidung,2,9,2025-01-01,2025-12-31
+Nakoinz,LK13,Einkaufen,1,4,2025-01-01,2025-12-31
+Nakoinz,LK15,Zubereitung kleine Mahlzeit,21,91,2025-01-01,2025-12-31
+Nakoinz,LK20_HH,Häusliche Betreuung §124 SGB XI (Haushaltsbuch),,4,2025-01-01,2025-12-31
+Ortmann,LK04,Große Körperpflege,2,8,2025-01-01,2025-12-31
+Ortmann,LK07a,Darm- und Blasenentleerung,7,28,2025-01-01,2025-12-31
+Ortmann,LK11a,Kleine Reinigung der Wohnung,,1,2025-01-01,2025-12-31
+Ortmann,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Ortmann,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Ortmann,LK15,Zubereitung kleine Mahlzeit,7,28,2025-01-01,2025-12-31
+Ortmann,LK17a,Einsatzpauschale,5,20,2025-01-01,2025-12-31
+Ortmann,LK17b,Einsatzpauschale WE,2,8,2025-01-01,2025-12-31
+Plümpe,LK04,Große Körperpflege,1,4,2025-01-01,2025-12-31
+Plümpe,LK11a,Kleine Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Plümpe,LK11b,Große Reinigung der Wohnung,2,9,2025-01-01,2025-12-31
+Plümpe,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Plümpe,LK13,Einkaufen,1,4,2025-01-01,2025-12-31
+Plümpe,LK20_HH,Häusliche Betreuung §124 SGB XI (Haushaltsbuch),,1,2025-01-01,2025-12-31
+Rudek,LK02,Kleine Körperpflege,4,17,2025-01-01,2025-12-31
+Rudek,LK04,Große Körperpflege,3,13,2025-01-01,2025-12-31
+Rudek,LK07a,Darm- und Blasenentleerung,14,61,2025-01-01,2025-12-31
+Rudek,LK07b,Darm- und Blasenentleerung erweitert,14,61,2025-01-01,2025-12-31
+Rudek,LK08a,Hilfestelll. beim Verl.o.Wiederaufs. d. Wohng.,1,4,2025-01-01,2025-12-31
+Rudek,LK08b,Hilfestellung beim Wiederaufsuchen der Wohnung,1,4,2025-01-01,2025-12-31
+Rudek,LK09,Begleitung ausser Haus,1,4,2025-01-01,2025-12-31
+Rudek,LK11a,Kleine Reinigung der Wohnung,3,13,2025-01-01,2025-12-31
+Rudek,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Rudek,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Rudek,LK13,Einkaufen,1,4,2025-01-01,2025-12-31
+Rudek,LK15,Zubereitung kleine Mahlzeit,21,91,2025-01-01,2025-12-31
+Rudek,LK20_HH,Häusliche Betreuung §124 SGB XI (Haushaltsbuch),,1,2025-01-01,2025-12-31
+Schlotzhauer,LK11a,Kleine Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Schlotzhauer,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Schlotzhauer,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Schlotzhauer,LK13,Einkaufen,,1,2025-01-01,2025-12-31
+Schlotzhauer,LK14,Zubereitung warme Mahlzeit,3,12,2025-01-01,2025-12-31
+Schlotzhauer,LK15,Zubereitung kleine Mahlzeit,18,72,2025-01-01,2025-12-31
+Schlotzhauer,LK17a,Einsatzpauschale,5,20,2025-01-01,2025-12-31
+Schlotzhauer,LK17b,Einsatzpauschale WE,2,8,2025-01-01,2025-12-31
+Schlotzhauer,LK20_HH,Häusliche Betreuung §124 SGB XI (Haushaltsbuch),,4,2025-01-01,2025-12-31
+Schmideder,LK02,Kleine Körperpflege,1,4,2025-01-01,2025-12-31
+Schmideder,LK11b,Große Reinigung der Wohnung,,2,2025-01-01,2025-12-31
+Schmideder,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Schmideder,LK13,Einkaufen,1,4,2025-01-01,2025-12-31
+Schmideder,LK17a,Einsatzpauschale,5,20,2025-01-01,2025-12-31
+Schmideder,LK17b,Einsatzpauschale WE,2,8,2025-01-01,2025-12-31
+Schmideder,LK20_HH,Häusliche Betreuung §124 SGB XI (Haushaltsbuch),,4,2025-01-01,2025-12-31
+Sommermann,LK02,Kleine Körperpflege,1,4,2025-01-01,2025-12-31
+Sommermann,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Sommermann,LK12,Wechseln u. Waschen der Kleidung,1,4,2025-01-01,2025-12-31
+Sommermann,LK13,Einkaufen,1,4,2025-01-01,2025-12-31
+Sommermann,LK15,Zubereitung kleine Mahlzeit,21,91,2025-01-01,2025-12-31
+Sweidan,LK04,Große Körperpflege,2,9,2025-01-01,2025-12-31
+Sweidan,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Sweidan,LK12,Wechseln u. Waschen der Kleidung,,2,2025-01-01,2025-12-31
+Sweidan,LK13,Einkaufen,,2,2025-01-01,2025-12-31
+Sweidan,LK15,Zubereitung kleine Mahlzeit,7,30,2025-01-01,2025-12-31
+Tschida,LK02,Kleine Körperpflege,13,56,2025-01-01,2025-12-31
+Tschida,LK04,Große Körperpflege,1,4,2025-01-01,2025-12-31
+Tschida,LK07a,Darm- und Blasenentleerung,7,30,2025-01-01,2025-12-31
+Tschida,LK11a,Kleine Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Tschida,LK11b,Große Reinigung der Wohnung,1,4,2025-01-01,2025-12-31
+Tschida,LK12,Wechseln u. Waschen der Kleidung,2,9,2025-01-01,2025-12-31
+Tschida,LK13,Einkaufen,1,4,2025-01-01,2025-12-31
+Tschida,LK15,Zubereitung kleine Mahlzeit,14,61,2025-01-01,2025-12-31

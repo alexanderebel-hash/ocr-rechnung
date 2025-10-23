@@ -80,7 +80,8 @@ async function loadKlientenWithCSVBewilligungen(): Promise<Klient[]> {
         // Convert CSV bewilligungen to Klient format
         const leistungen = csvBewilligungen.map(b => ({
           lkCode: b.lk_code.toUpperCase(),
-          menge: b.anzahl
+          menge: b.je_monat, // Use monthly value
+          jeWoche: b.je_woche // Also store weekly value
         }));
 
         klientenWithBewilligungen.push({

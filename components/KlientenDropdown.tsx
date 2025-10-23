@@ -175,7 +175,7 @@ export function KlientenDropdown({ onSelect, onNewKlient }: KlientenDropdownProp
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {selectedKlient.bewilligungen[0]?.leistungen.map((leistung: any, idx: number) => {
                 const proMonat = leistung.menge;
-                const proWoche = Math.round((proMonat / 4) * 10) / 10; // Round to 1 decimal
+                const proWoche = leistung.jeWoche || Math.round((proMonat / 4) * 10) / 10; // Use CSV value or calculate
 
                 return (
                   <div
