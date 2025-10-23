@@ -1,0 +1,121 @@
+-- ============================================
+-- STORAGE BUCKET SETUP
+-- Für PDF-Speicherung der Korrekturrechnungen
+-- ============================================
+--
+-- WICHTIG: Dieser Teil kann NICHT per SQL ausgeführt werden!
+-- Du musst das manuell im Supabase Dashboard machen.
+--
+-- ============================================
+
+📦 STORAGE BUCKET ERSTELLEN:
+
+1. Gehe zu: https://supabase.com/dashboard/project/jkipppgvcsucrdzjedwo/storage/buckets
+
+2. Klicke auf "New Bucket" (grüner Button oben rechts)
+
+3. Einstellungen:
+   Name: korrekturrechnungen
+   Public: ❌ AUS (Bucket ist privat)
+   File size limit: 50 MB (Standard ist okay)
+   Allowed MIME types: application/pdf (oder leer lassen für alle)
+
+4. Klicke auf "Create bucket"
+
+5. ✅ Fertig!
+
+-- ============================================
+-- STORAGE POLICIES (automatisch über SQL)
+-- ============================================
+-- Diese Policies erlauben authenticated users das Hoch- und Herunterladen
+
+-- Policy: Upload erlauben
+INSERT INTO storage.policies (name, bucket_id, definition, command)
+VALUES (
+  'Allow authenticated users to upload PDFs',
+  'korrekturrechnungen',
+  '(bucket_id = ''korrekturrechnungen''::text)',
+  'INSERT'
+);
+
+-- Policy: Download erlauben  
+INSERT INTO storage.policies (name, bucket_id, definition, command)
+VALUES (
+  'Allow authenticated users to read PDFs',
+  'korrekturrechnungen',
+  '(bucket_id = ''korrekturrechnungen''::text)',
+  'SELECT'
+);
+
+-- Policy: Löschen erlauben (falls nötig)
+INSERT INTO storage.policies (name, bucket_id, definition, command)
+VALUES (
+  'Allow authenticated users to delete PDFs',
+  'korrekturrechnungen',
+  '(bucket_id = ''korrekturrechnungen''::text)',
+  'DELETE'
+);
+
+-- ============================================
+-- ALTERNATIV: Policies über Dashboard
+-- ============================================
+-- Falls die SQL-Policies nicht funktionieren:
+--
+-- 1. Gehe zu Storage → korrekturrechnungen
+-- 2. Klicke auf "Policies" (rechts)
+-- 3. Erstelle New Policy für:
+--    - INSERT (Upload)
+--    - SELECT (Download)
+--    - DELETE (Optional)
+-- 4. Als Target role: authenticated
+-- 5. Policy check: return true
+--
+-- ============================================
+
+✅ NACH DEM SETUP:
+
+Die Storage-Struktur sieht dann so aus:
+
+storage/
+└── korrekturrechnungen/
+    ├── 2025/
+    │   ├── 01/
+    │   │   ├── ewert_2025-01_korrektur.pdf
+    │   │   └── mueller_2025-01_korrektur.pdf
+    │   └── 02/
+    │       └── ewert_2025-02_korrektur.pdf
+    └── 2026/
+        └── ...
+
+Die URLs sehen dann so aus:
+https://jkipppgvcsucrdzjedwo.supabase.co/storage/v1/object/public/korrekturrechnungen/2025/01/ewert_2025-01_korrektur.pdf
+
+-- ============================================
+-- TEST: Upload funktioniert?
+-- ============================================
+-- Im Frontend kannst du testen mit:
+
+/*
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  'https://jkipppgvcsucrdzjedwo.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+)
+
+// PDF hochladen
+const { data, error } = await supabase.storage
+  .from('korrekturrechnungen')
+  .upload('2025/01/test.pdf', pdfFile, {
+    contentType: 'application/pdf',
+    upsert: false
+  })
+
+if (error) {
+  console.error('Upload fehler:', error)
+} else {
+  console.log('✓ PDF hochgeladen:', data.path)
+}
+*/
+
+-- ============================================

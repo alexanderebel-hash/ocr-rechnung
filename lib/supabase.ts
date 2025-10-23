@@ -186,3 +186,32 @@ export async function createLeistung(leistung: Omit<DbLeistung, 'id' | 'created_
     return null;
   }
 }
+
+// NEW: Types for the invoice correction system
+export interface Client {
+  id: string;
+  vorname: string;
+  nachname: string;
+  versichertennummer: string;
+  pflegegrad: number;
+  bezirksamt: string;
+  ik_nummer: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Bewilligung {
+  id: string;
+  client_id: string;
+  genehmigungsnummer: string;
+  gueltig_von: string;
+  gueltig_bis: string;
+  bezirksamt: string;
+  leistungen: Array<{
+    lkCode: string;
+    menge: number;
+  }>;
+  notizen?: string;
+  created_at: string;
+  updated_at: string;
+}

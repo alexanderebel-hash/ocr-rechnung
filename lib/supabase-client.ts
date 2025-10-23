@@ -137,6 +137,8 @@ export interface KlientMitBewilligungen {
 export async function getAllKlienten(): Promise<KlientMitBewilligungen[]> {
   try {
     console.log('🔄 Loading clients from Supabase...');
+    console.log('📡 Supabase URL:', supabaseUrl);
+    console.log('🔑 Supabase Key configured:', !!supabaseKey);
 
     // Fetch all clients
     const { data: klienten, error: klientenError } = await supabase
@@ -144,7 +146,10 @@ export async function getAllKlienten(): Promise<KlientMitBewilligungen[]> {
       .select('*')
       .order('name');
 
-    if (klientenError) throw klientenError;
+    if (klientenError) {
+      console.error('❌ Klienten Error:', klientenError);
+      throw klientenError;
+    }
 
     if (!klienten || klienten.length === 0) {
       console.log('⚠️ No clients found in database');
