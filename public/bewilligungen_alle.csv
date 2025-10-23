@@ -16,12 +16,12 @@ Block,LK13,Einkaufen,1.0,3,2025-01-01,2025-12-31
 Block,LK15,Zubereitung kleine Mahlzeit,7.0,3,2025-01-01,2025-12-31
 Block,LK17a,Einsatzpauschale,5.0,3,2025-01-01,2025-12-31
 Block,LK17b,Einsatzpauschale WE,2.0,3,2025-01-01,2025-12-31
-Bollweber,LK02,Kleine Körperpflege,2.0,3,2025-01-01,2025-12-31
-Bollweber,LK03b,Erweiterte große Körperpflege m. Baden,1.0,3,2025-01-01,2025-12-31
-Bollweber,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
-Bollweber,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
-Bollweber,LK13,Einkaufen,1.0,3,2025-01-01,2025-12-31
-Bollweber,LK15,Zubereitung kleine Mahlzeit,7.0,3,2025-01-01,2025-12-31
+Bollweber,LK02,Kleine Körperpflege,9.0,3,2025-01-01,2025-12-31
+Bollweber,LK03b,Erweiterte große Körperpflege m. Baden,4.0,3,2025-01-01,2025-12-31
+Bollweber,LK11b,Große Reinigung der Wohnung,4.0,3,2025-01-01,2025-12-31
+Bollweber,LK12,Wechseln u. Waschen der Kleidung,4.0,3,2025-01-01,2025-12-31
+Bollweber,LK13,Einkaufen,4.0,3,2025-01-01,2025-12-31
+Bollweber,LK15,Zubereitung kleine Mahlzeit,30.0,3,2025-01-01,2025-12-31
 Budach,LK11b,Große Reinigung der Wohnung,1.0,3,2025-01-01,2025-12-31
 Budach,LK12,Wechseln u. Waschen der Kleidung,1.0,3,2025-01-01,2025-12-31
 Budach,LK17a,Einsatzpauschale,1.0,3,2025-01-01,2025-12-31
