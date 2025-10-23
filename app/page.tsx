@@ -117,9 +117,8 @@ export default function Home() {
           <>
             {/* PDF Upload */}
             <PDFUpload
-              selectedKlient={selectedKlient}
-              bewilligung={bewilligung}
-              onInvoiceDataGenerated={(data) => {
+              type="rechnung"
+              onDataExtracted={(data) => {
                 setInvoiceData(data)
                 console.log('Rechnung analysiert:', data)
               }}

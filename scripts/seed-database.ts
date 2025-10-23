@@ -165,7 +165,7 @@ async function seedDatabase() {
 
       // Insert services (LK codes)
       if (clientData.bewilligung.leistungen.length > 0) {
-        const leistungenToInsert = clientData.bewilligung.leistungen.map((l) => ({
+        const leistungenToInsert = clientData.bewilligung.leistungen.map((l: any) => ({
           bewilligung_id: bewilligung.id,
           lk_code: l.lk_code,
           menge: l.menge,
