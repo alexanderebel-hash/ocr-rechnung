@@ -120,6 +120,23 @@ async function loadKlientenFromExcelOrFallback(): Promise<Klient[]> {
   return klienten;
 }
 
+// Standard Leistungen für Pflegegrad 2
+const standardLeistungenPG2 = [
+  { lkCode: 'LK02', menge: 4 },
+  { lkCode: 'LK11A', menge: 4 },
+  { lkCode: 'LK13', menge: 4 },
+  { lkCode: 'LK15', menge: 60 }
+];
+
+// Standard Leistungen für Pflegegrad 3
+const standardLeistungenPG3 = [
+  { lkCode: 'LK02', menge: 4 },
+  { lkCode: 'LK11B', menge: 4 },
+  { lkCode: 'LK12', menge: 4 },
+  { lkCode: 'LK13', menge: 4 },
+  { lkCode: 'LK15', menge: 90 }
+];
+
 // Fallback static data if Excel parsing fails
 export const fallbackKlienten: Klient[] = [
   {
@@ -137,7 +154,7 @@ export const fallbackKlienten: Klient[] = [
         gueltig_von: '2025-01-01',
         gueltig_bis: '2025-12-31',
         status: 'aktiv',
-        leistungen: [],
+        leistungen: standardLeistungenPG3,
         pflegedienst: {
           name: 'DomusVita Gesundheit GmbH',
           standort: 'Kreuzberg',
@@ -542,7 +559,13 @@ export const fallbackKlienten: Klient[] = [
         gueltig_von: '2025-01-01',
         gueltig_bis: '2025-12-31',
         status: 'aktiv',
-        leistungen: [],
+        leistungen: [
+          { lkCode: 'LK02', menge: 4 },
+          { lkCode: 'LK11B', menge: 4 },
+          { lkCode: 'LK12', menge: 4 },
+          { lkCode: 'LK13', menge: 4 },
+          { lkCode: 'LK15', menge: 90 }
+        ],
         pflegedienst: {
           name: 'DomusVita Gesundheit GmbH',
           standort: 'Kreuzberg',
@@ -569,7 +592,7 @@ export const fallbackKlienten: Klient[] = [
         gueltig_von: '2025-05-16',
         gueltig_bis: '2026-04-30',
         status: 'aktiv',
-        leistungen: [],
+        leistungen: standardLeistungenPG2,
         pflegedienst: {
           name: 'DomusVita Gesundheit GmbH',
           standort: 'Kreuzberg',
