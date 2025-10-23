@@ -82,24 +82,44 @@ export default function Home() {
             </h2>
 
             <InvoicePDF
-              data={{
-                ...invoiceData,
-                klient: {
-                  name: selectedKlient.name,
-                  adresse: selectedKlient.adresse,
-                  pflegegrad: selectedKlient.pflegegrad,
-                },
-                dienst: bewilligung.pflegedienst,
-                rechnungsDatum: new Date().toLocaleDateString('de-DE'),
-                rechnungsnummer: `RG-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
-                debitor: selectedKlient.id,
-                ik: bewilligung.pflegedienst.ik,
-                zeitraumVon: invoiceData.abrechnungszeitraumVon || bewilligung.gueltig_von,
-                zeitraumBis: invoiceData.abrechnungszeitraumBis || bewilligung.gueltig_bis,
-                positionen: invoiceData.rechnungsPositionen || [],
-                pflegekasse: invoiceData.gesamtbetrag || 0,
-                zahlungsziel: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('de-DE'),
-              }}
+              data={(() => {
+                // Ensure all positions have valid numeric values
+                const positionen = (invoiceData.rechnungsPositionen || []).map((pos: any) => ({
+                  ...pos,
+                  menge: Number(pos.menge) || 0,
+                  preis: Number(pos.preis) || 0,
+                  gesamt: Number(pos.gesamt) || (Number(pos.menge) * Number(pos.preis)) || 0,
+                }));
+
+                const zwischensumme = positionen.reduce((sum: number, pos: any) => sum + pos.gesamt, 0);
+                const zinv = Number(invoiceData.zinv) || (zwischensumme * 0.0338); // 3.38%
+                const gesamtbetrag = zwischensumme + zinv;
+                const pflegekasse = gesamtbetrag;
+                const rechnungsbetrag = 0; // Pflegekasse zahlt alles
+
+                return {
+                  ...invoiceData,
+                  klient: {
+                    name: selectedKlient.name,
+                    adresse: selectedKlient.adresse,
+                    pflegegrad: selectedKlient.pflegegrad,
+                  },
+                  dienst: bewilligung.pflegedienst,
+                  rechnungsDatum: new Date().toLocaleDateString('de-DE'),
+                  rechnungsnummer: `RG-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
+                  debitor: selectedKlient.id,
+                  ik: bewilligung.pflegedienst.ik,
+                  zeitraumVon: invoiceData.abrechnungszeitraumVon || bewilligung.gueltig_von,
+                  zeitraumBis: invoiceData.abrechnungszeitraumBis || bewilligung.gueltig_bis,
+                  positionen,
+                  zwischensumme,
+                  zinv,
+                  gesamtbetrag,
+                  pflegekasse,
+                  rechnungsbetrag,
+                  zahlungsziel: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('de-DE'),
+                };
+              })()}
             />
           </div>
         )}
