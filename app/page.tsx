@@ -75,13 +75,40 @@ export default function Home() {
         />
 
         {/* Korrekturrechnung */}
-        {invoiceData && (
+        {invoiceData && selectedKlient && bewilligung && (
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">
               Korrekturrechnung
             </h2>
 
-            <InvoicePDF data={invoiceData} />
+            <InvoicePDF
+              data={{
+                ...invoiceData,
+                klient: {
+                  name: selectedKlient.name,
+                  adresse: selectedKlient.adresse,
+                  pflegegrad: selectedKlient.pflegegrad,
+                },
+                dienst: bewilligung.pflegedienst,
+                rechnungsDatum: new Date().toLocaleDateString('de-DE'),
+                rechnungsnummer: `RG-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
+                debitor: selectedKlient.id,
+                ik: bewilligung.pflegedienst.ik,
+                zeitraumVon: invoiceData.abrechnungszeitraumVon || bewilligung.gueltig_von,
+                zeitraumBis: invoiceData.abrechnungszeitraumBis || bewilligung.gueltig_bis,
+                positionen: invoiceData.rechnungsPositionen || [],
+                pflegekasse: invoiceData.gesamtbetrag || 0,
+                zahlungsziel: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('de-DE'),
+              }}
+            />
+          </div>
+        )}
+
+        {invoiceData && (!selectedKlient || !bewilligung) && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+            <p className="text-yellow-800">
+              ⚠️ Bitte wähle zuerst einen Klienten aus, bevor du eine Rechnung hochlädst.
+            </p>
           </div>
         )}
 
