@@ -43,9 +43,7 @@ export function KlientenDropdown({ onSelect, onNewKlient }: KlientenDropdownProp
   }
 
   const sortedKlienten = [...klienten].sort((a, b) => {
-    const aEnds = new Date(a.bewilligungen[0].gueltig_bis);
-    const bEnds = new Date(b.bewilligungen[0].gueltig_bis);
-    return aEnds.getTime() - bEnds.getTime(); // Sort by nearest expiry first
+    return a.name.localeCompare(b.name, 'de-DE'); // Alphabetical sort
   });
 
   if (loading) {
