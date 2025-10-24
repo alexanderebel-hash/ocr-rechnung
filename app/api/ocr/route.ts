@@ -45,7 +45,8 @@ export async function POST(request: NextRequest) {
 
     const uploadedFile = await openai.files.create({
       file: fileForUpload,
-      purpose: 'vision',
+      purpose: 'assistants',
+      metadata: { source_type: type },
     });
 
     const response = await openai.responses.create({
