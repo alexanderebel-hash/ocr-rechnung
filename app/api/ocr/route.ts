@@ -43,65 +43,71 @@ export async function POST(request: NextRequest) {
       type: 'application/pdf',
     });
 
-    const uploadedFile = await openai.files.create({
-      file: fileForUpload,
-      purpose: 'assistants',
-      metadata: { source_type: type },
+    const vectorStore = await openai.vectorStores.create({
+      name: `ocr-${type}-${Date.now()}`,
     });
 
-    const response = await openai.responses.create({
-      model: 'gpt-4.1-mini',
-      input: [
-        {
-          role: 'user',
-          content: [
-            { type: 'input_text', text: prompt },
-            { type: 'input_file', file_id: uploadedFile.id },
-          ],
-        },
-      ],
-      max_output_tokens: 4096,
-    });
+    try {
+      await openai.vectorStores.fileBatches.uploadAndPoll(vectorStore.id, {
+        files: [fileForUpload],
+      });
 
-    // Attempt to delete uploaded file to avoid storage accumulation
-    void openai.files.del(uploadedFile.id).catch((err) => {
-      console.warn('OpenAI file cleanup failed:', err);
-    });
+      const response = await openai.responses.create({
+        model: 'gpt-4.1-mini',
+        tools: [{ type: 'file_search', vector_store_ids: [vectorStore.id] }],
+        input: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'input_text',
+                text: `${prompt}\n\nNutze das angehängte PDF in der Wissensdatenbank.`,
+              },
+            ],
+          },
+        ],
+        max_output_tokens: 4096,
+      });
 
-    const typedResponse = response as any;
-    const outputText =
-      typedResponse.output_text ??
-      (typedResponse.output ?? [])
-        .flatMap((item: any) =>
-          (item.content ?? [])
-            .filter(
-              (contentItem: any) =>
-                contentItem.type === 'output_text' ||
-                contentItem.type === 'text' ||
-                contentItem.type === 'output_string'
-            )
-            .map((contentItem: any) => contentItem.text ?? contentItem.output_text ?? '')
-        )
-        .join('')
-        .trim();
+      const typedResponse = response as any;
+      const outputText =
+        typedResponse.output_text ??
+        (typedResponse.output ?? [])
+          .flatMap((item: any) =>
+            (item.content ?? [])
+              .filter(
+                (contentItem: any) =>
+                  contentItem.type === 'output_text' ||
+                  contentItem.type === 'text' ||
+                  contentItem.type === 'output_string'
+              )
+              .map((contentItem: any) => contentItem.text ?? contentItem.output_text ?? '')
+          )
+          .join('')
+          .trim();
 
-    if (!outputText) {
-      return NextResponse.json(
-        {
-          error: 'Keine strukturierten Daten gefunden',
-          rawResponse: response,
-        },
-        { status: 500 }
-      );
+      if (!outputText) {
+        return NextResponse.json(
+          {
+            error: 'Keine strukturierten Daten gefunden',
+            rawResponse: response,
+          },
+          { status: 500 }
+        );
+      }
+
+      const extractedData = JSON.parse(outputText);
+
+      return NextResponse.json({
+        success: true,
+        type,
+        data: extractedData,
+      });
+    } finally {
+      void openai.vectorStores.del(vectorStore.id).catch((err) => {
+        console.warn('OpenAI vector store cleanup failed:', err);
+      });
     }
-
-    const extractedData = JSON.parse(outputText);
-
-    return NextResponse.json({
-      success: true,
-      type,
-      data: extractedData,
-    });
 
   } catch (error) {
     console.error('OCR Error:', error);
