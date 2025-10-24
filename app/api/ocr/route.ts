@@ -52,51 +52,69 @@ export async function POST(request: NextRequest) {
         files: [fileForUpload],
       });
 
-      const response = await openai.responses.create({
-        model: 'gpt-4.1-mini',
-        tools: [{ type: 'file_search', vector_store_ids: [vectorStore.id] }],
-        input: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'input_text',
-                text: `${prompt}\n\nNutze das angehängte PDF in der Wissensdatenbank.`,
-              },
-            ],
-          },
-        ],
-        max_output_tokens: 4096,
+      // Create an assistant with file search capability
+      const assistant = await openai.beta.assistants.create({
+        model: 'gpt-4o-mini',
+        instructions: 'Du bist ein Experte für die Extraktion strukturierter Daten aus PDFs. Antworte nur mit validen JSON-Daten.',
+        tools: [{ type: 'file_search' }],
+        tool_resources: {
+          file_search: {
+            vector_store_ids: [vectorStore.id]
+          }
+        }
       });
 
-      const typedResponse = response as any;
-      const outputText =
-        typedResponse.output_text ??
-        (typedResponse.output ?? [])
-          .flatMap((item: any) =>
-            (item.content ?? [])
-              .filter(
-                (contentItem: any) =>
-                  contentItem.type === 'output_text' ||
-                  contentItem.type === 'text' ||
-                  contentItem.type === 'output_string'
-              )
-              .map((contentItem: any) => contentItem.text ?? contentItem.output_text ?? '')
-          )
-          .join('')
-          .trim();
+      // Create a thread
+      const thread = await openai.beta.threads.create();
+
+      // Add message to thread
+      await openai.beta.threads.messages.create(thread.id, {
+        role: 'user',
+        content: `${prompt}\n\nNutze das angehängte PDF in der Wissensdatenbank.`
+      });
+
+      // Run the assistant
+      const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
+        assistant_id: assistant.id,
+        max_completion_tokens: 4096
+      });
+
+      // Get messages
+      const messages = await openai.beta.threads.messages.list(thread.id);
+      const assistantMessage = messages.data.find(m => m.role === 'assistant');
+
+      // Extract text from message
+      let outputText = '';
+      if (assistantMessage) {
+        for (const content of assistantMessage.content) {
+          if (content.type === 'text') {
+            outputText += content.text.value;
+          }
+        }
+      }
+
+      // Cleanup assistant and thread
+      await openai.beta.assistants.del(assistant.id).catch(console.warn);
+      await openai.beta.threads.del(thread.id).catch(console.warn);
 
       if (!outputText) {
         return NextResponse.json(
           {
             error: 'Keine strukturierten Daten gefunden',
-            rawResponse: response,
+            details: 'Der Assistant hat keine Antwort zurückgegeben',
           },
           { status: 500 }
         );
       }
 
-      const extractedData = JSON.parse(outputText);
+      // Remove markdown code blocks if present
+      let jsonText = outputText.trim();
+      const jsonMatch = jsonText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+      if (jsonMatch) {
+        jsonText = jsonMatch[1].trim();
+      }
+
+      const extractedData = JSON.parse(jsonText);
 
       return NextResponse.json({
         success: true,
