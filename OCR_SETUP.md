@@ -2,22 +2,23 @@
 
 ## PDF Upload & OCR Feature
 
-Diese Anwendung nutzt Claude AI von Anthropic, um automatisch Daten aus PDF-Dokumenten zu extrahieren.
+Diese Anwendung nutzt das OpenAI Vision-Modell, um automatisch Daten aus PDF-Dokumenten zu extrahieren.
 
 ### 🚀 Setup
 
-1. **Anthropic API Key erhalten**
-   - Gehen Sie zu [https://console.anthropic.com/](https://console.anthropic.com/)
+1. **OpenAI API Key erhalten**
+   - Gehen Sie zu [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
    - Erstellen Sie einen Account oder loggen Sie sich ein
    - Navigieren Sie zu "API Keys" und erstellen Sie einen neuen Key
    - Kopieren Sie den API Key
 
 2. **API Key konfigurieren**
    - Öffnen Sie die Datei `.env.local` im Projektverzeichnis
-   - Ersetzen Sie `your_api_key_here` mit Ihrem echten API Key:
+   - Hinterlegen Sie Ihren Key in der Variablen `OpenAIOCR` (oder alternativ `OPENAI_API_KEY`):
    ```
-   ANTHROPIC_API_KEY=sk-ant-api03-...
+   OpenAIOCR=sk-openai-...
    ```
+   - In Vercel hinterlegen Sie denselben Key unter **Settings → Environment Variables** mit dem Namen `OpenAIOCR` (oder `OPENAI_API_KEY`). Vercel besitzt diesen Key bereits laut Projektkonfiguration.
 
 3. **Server neu starten**
    ```bash
@@ -37,7 +38,7 @@ Diese Anwendung nutzt Claude AI von Anthropic, um automatisch Daten aus PDF-Doku
 2. **Rechnung PDF hochladen**
    - Klicken Sie auf den "Rechnung PDF" Upload-Bereich (rechts)
    - Wählen Sie Ihre Rechnungs-PDF aus oder ziehen Sie sie per Drag & Drop
-   - Claude OCR extrahiert automatisch:
+   - Die OCR extrahiert automatisch:
      - Alle Rechnungspositionen mit LK-Codes
      - Mengen und Einzelpreise
      - AUB-Positionen
@@ -56,21 +57,21 @@ Diese Anwendung nutzt Claude AI von Anthropic, um automatisch Daten aus PDF-Doku
 
 ### 🔧 Technische Details
 
-- **OCR Engine**: Claude Sonnet 4 (claude-sonnet-4-20250514) mit PDF-Vision
+- **OCR Engine**: OpenAI GPT-4.1 Mini (gpt-4.1-mini) mit Vision-Unterstützung
 - **API Route**: `/api/ocr`
 - **Komponente**: `components/PDFUpload.tsx`
-- **Max. Dateigröße**: Abhängig von Anthropic API Limits
+- **Max. Dateigröße**: Abhängig von OpenAI API Limits
 
 ### ⚠️ Wichtig
 
 - Der API Key wird nur serverseitig verwendet (in der API Route)
 - Der API Key ist NIEMALS im Client-Code sichtbar
 - Laden Sie `.env.local` NICHT in Git hoch (bereits in .gitignore)
-- Kosten entstehen pro API-Aufruf (siehe Anthropic Pricing)
+- Kosten entstehen pro API-Aufruf (siehe OpenAI Pricing)
 
 ### 🐛 Troubleshooting
 
-**Fehler: "ANTHROPIC_API_KEY nicht gefunden"**
+**Fehler: "OpenAIOCR/OPENAI_API_KEY nicht gefunden"**
 - Überprüfen Sie, ob `.env.local` existiert
 - Stellen Sie sicher, dass der API Key korrekt eingetragen ist
 - Starten Sie den Server neu
@@ -78,7 +79,7 @@ Diese Anwendung nutzt Claude AI von Anthropic, um automatisch Daten aus PDF-Doku
 **Fehler: "OCR-Processing fehlgeschlagen"**
 - Überprüfen Sie, ob die PDF-Datei valide ist
 - Stellen Sie sicher, dass die PDF Text enthält (nicht nur Bilder)
-- Prüfen Sie Ihr Anthropic API-Guthaben
+- Prüfen Sie Ihr OpenAI API-Guthaben
 
 **OCR erkennt Daten nicht korrekt**
 - Die PDF-Struktur könnte ungewöhnlich sein

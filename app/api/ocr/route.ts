@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ClaudeOCR || process.env.ANTHROPIC_API_KEY,
+const openai = new OpenAI({
+  apiKey: process.env.OpenAIOCR || process.env.OPENAI_API_KEY,
 });
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if API key is configured
-    const apiKey = process.env.ClaudeOCR || process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.OpenAIOCR || process.env.OPENAI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'ClaudeOCR oder ANTHROPIC_API_KEY ist nicht konfiguriert. Bitte in Vercel Environment Variables setzen.' },
+        { error: 'OpenAIOCR oder OPENAI_API_KEY ist nicht konfiguriert. Bitte in Vercel Environment Variables setzen.' },
         { status: 500 }
       );
     }
@@ -27,54 +26,73 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ungültiger Typ' }, { status: 400 });
     }
 
-    // Convert PDF to base64
+    // Convert PDF to buffer for upload
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const base64 = buffer.toString('base64');
 
     // Prepare prompt based on document type
-    const prompt = type === 'bewilligung'
-      ? getBewilligungPrompt()
-      : getRechnungPrompt();
+    const prompt = type === 'bewilligung' ? getBewilligungPrompt() : getRechnungPrompt();
 
-    // Call Claude API with vision
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      messages: [
+    // Upload PDF to OpenAI (vision purpose enables multimodal parsing)
+    const filename =
+      (file as any).name && typeof (file as any).name === 'string'
+        ? (file as any).name
+        : `${type}-upload-${Date.now()}.pdf`;
+
+    const fileForUpload = await OpenAI.toFile(buffer, filename, {
+      type: 'application/pdf',
+    });
+
+    const uploadedFile = await openai.files.create({
+      file: fileForUpload,
+      purpose: 'vision',
+    });
+
+    const response = await openai.responses.create({
+      model: 'gpt-4.1-mini',
+      input: [
         {
           role: 'user',
           content: [
-            {
-              type: 'document',
-              source: {
-                type: 'base64',
-                media_type: 'application/pdf',
-                data: base64,
-              },
-            },
-            {
-              type: 'text',
-              text: prompt,
-            },
+            { type: 'input_text', text: prompt },
+            { type: 'input_file', file_id: uploadedFile.id },
           ],
         },
       ],
+      response_format: { type: 'json_object' },
+      max_output_tokens: 4096,
     });
 
-    // Extract JSON from response
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+    // Attempt to delete uploaded file to avoid storage accumulation
+    void openai.files.del(uploadedFile.id).catch((err) => {
+      console.warn('OpenAI file cleanup failed:', err);
+    });
 
-    // Find JSON in response (Claude might wrap it in markdown)
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return NextResponse.json({
-        error: 'Keine strukturierten Daten gefunden',
-        rawResponse: responseText
-      }, { status: 500 });
+    const outputText =
+      (response as any).output_text ??
+      (((response as any).output ?? []) as Array<any>)
+        .flatMap((item) =>
+          (item.content ?? [])
+            .filter(
+              (contentItem: any) =>
+                contentItem.type === 'output_text' || contentItem.type === 'text'
+            )
+            .map((contentItem: any) => contentItem.text ?? '')
+        )
+        .join('')
+        .trim();
+
+    if (!outputText) {
+      return NextResponse.json(
+        {
+          error: 'Keine strukturierten Daten gefunden',
+          rawResponse: response,
+        },
+        { status: 500 }
+      );
     }
 
-    const extractedData = JSON.parse(jsonMatch[0]);
+    const extractedData = JSON.parse(outputText);
 
     return NextResponse.json({
       success: true,
