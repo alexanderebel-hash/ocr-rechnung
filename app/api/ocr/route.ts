@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       purpose: 'vision',
     });
 
-    const response = await openai.responses.parse({
+    const response = await openai.responses.create({
       model: 'gpt-4.1-mini',
       input: [
         {
@@ -67,16 +67,24 @@ export async function POST(request: NextRequest) {
       console.warn('OpenAI file cleanup failed:', err);
     });
 
-    const extractedData =
-      response.output[0]?.content[0]?.type === 'json_object'
-        ? response.output[0].content[0].json
-        : response.output[0]?.content[0]?.type === 'output_text'
-          ? JSON.parse(response.output[0].content[0].text ?? '{}')
-          : response.output_text
-            ? JSON.parse(response.output_text)
-            : null;
+    const typedResponse = response as any;
+    const outputText =
+      typedResponse.output_text ??
+      (typedResponse.output ?? [])
+        .flatMap((item: any) =>
+          (item.content ?? [])
+            .filter(
+              (contentItem: any) =>
+                contentItem.type === 'output_text' ||
+                contentItem.type === 'text' ||
+                contentItem.type === 'output_string'
+            )
+            .map((contentItem: any) => contentItem.text ?? contentItem.output_text ?? '')
+        )
+        .join('')
+        .trim();
 
-    if (!extractedData) {
+    if (!outputText) {
       return NextResponse.json(
         {
           error: 'Keine strukturierten Daten gefunden',
@@ -85,6 +93,8 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    const extractedData = JSON.parse(outputText);
 
     return NextResponse.json({
       success: true,
