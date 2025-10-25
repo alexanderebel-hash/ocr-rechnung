@@ -3,10 +3,10 @@ import Anthropic from '@anthropic-ai/sdk';
 
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || process.env.ClaudeOCR;
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'ANTHROPIC_API_KEY oder CLAUDE_API_KEY ist nicht konfiguriert. Bitte in Vercel Environment Variables setzen.' },
+        { error: 'ANTHROPIC_API_KEY, CLAUDE_API_KEY oder ClaudeOCR ist nicht konfiguriert. Bitte in Vercel Environment Variables setzen.' },
         { status: 500 }
       );
     }
