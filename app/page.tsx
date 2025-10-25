@@ -75,14 +75,28 @@ export default function Home() {
   const wendeSonderregelnAn = (positionen: RechnungsPosition[], bewilligungData: any[]): RechnungsPosition[] => {
     let result = [...positionen];
 
+    // Helper function: Safe bewilligung lookup
+    const findBewilligungSafe = (lkCode: string) => {
+      return bewilligungData.find(b =>
+        b && b.lkCode && b.lkCode.toUpperCase() === lkCode.toUpperCase()
+      );
+    };
+
+    // Helper function: Safe position lookup
+    const findPositionSafe = (lkCode: string) => {
+      return result.find(p =>
+        p && p.lkCode && p.lkCode.toUpperCase() === lkCode.toUpperCase()
+      );
+    };
+
     // ============================================
     // SONDERREGEL 1: LK14 → LK15
     // Warme Mahlzeit → Kleine Mahlzeit
     // ============================================
-    const lk14Pos = result.find(p => p.lkCode === 'LK14');
-    const lk15Pos = result.find(p => p.lkCode === 'LK15');
-    const lk14Bewilligt = bewilligungData.find(b => b.lkCode.toUpperCase() === 'LK14');
-    const lk15Bewilligt = bewilligungData.find(b => b.lkCode.toUpperCase() === 'LK15');
+    const lk14Pos = findPositionSafe('LK14');
+    const lk15Pos = findPositionSafe('LK15');
+    const lk14Bewilligt = findBewilligungSafe('LK14');
+    const lk15Bewilligt = findBewilligungSafe('LK15');
 
     if (lk14Pos && lk14Pos.menge > 0 && !lk14Bewilligt && lk15Bewilligt) {
       const lk15MaxMenge = lk15Bewilligt.menge || (lk15Bewilligt.jeWoche * 4.33);
@@ -138,10 +152,10 @@ export default function Home() {
     // Große Körperpflege ↔ Kleine Körperpflege
     // NUR wenn LK04 bewilligt ist!
     // ============================================
-    const lk02Pos = result.find(p => p.lkCode === 'LK02');
-    const lk04Pos = result.find(p => p.lkCode === 'LK04');
-    const lk04Bewilligt = bewilligungData.find(b => b.lkCode.toUpperCase() === 'LK04');
-    const lk02Bewilligt = bewilligungData.find(b => b.lkCode.toUpperCase() === 'LK02');
+    const lk02Pos = findPositionSafe('LK02');
+    const lk04Pos = findPositionSafe('LK04');
+    const lk04Bewilligt = findBewilligungSafe('LK04');
+    const lk02Bewilligt = findBewilligungSafe('LK02');
 
     if (lk04Bewilligt && !lk02Bewilligt) {
       const lk04MaxMenge = lk04Bewilligt.menge || (lk04Bewilligt.jeWoche * 4.33);
@@ -195,12 +209,10 @@ export default function Home() {
     // Erweiterte große Körperpflege → Erweiterte kleine
     // NUR wenn LK03a bewilligt ist!
     // ============================================
-    const lk01Pos = result.find(p => p.lkCode === 'LK01');
-    const lk03aPos = result.find(p => p.lkCode === 'LK03A' || p.lkCode === 'LK03a');
-    const lk03aBewilligt = bewilligungData.find(b =>
-      b.lkCode.toUpperCase() === 'LK03A' || b.lkCode.toUpperCase() === 'LK03a'
-    );
-    const lk01Bewilligt = bewilligungData.find(b => b.lkCode.toUpperCase() === 'LK01');
+    const lk01Pos = findPositionSafe('LK01');
+    const lk03aPos = findPositionSafe('LK03A') || findPositionSafe('LK03a');
+    const lk03aBewilligt = findBewilligungSafe('LK03A') || findBewilligungSafe('LK03a');
+    const lk01Bewilligt = findBewilligungSafe('LK01');
 
     if (lk03aBewilligt && !lk01Bewilligt) {
       const lk03aMaxMenge = lk03aBewilligt.menge || (lk03aBewilligt.jeWoche * 4.33);
@@ -256,10 +268,18 @@ export default function Home() {
   const berechneKorrekturrechnung = () => {
     if (!bewilligung || !invoiceData) return null;
 
-    const bewilligungData = bewilligung.leistungen || [];
-
     console.log('\n=== STARTE KORREKTURRECHNUNG ===');
-    console.log('Bewilligte LKs:', bewilligungData.map((b: any) => `${b.lkCode} (${b.jeWoche || 0}×W, ${b.menge || 0}×M)`));
+
+    // VALIDATION: Filter invalid bewilligungen
+    const bewilligungData = (bewilligung.leistungen || []).filter((b: any) => {
+      if (!b || !b.lkCode) {
+        console.warn('⚠️ Invalid bewilligung entry found and removed:', b);
+        return false;
+      }
+      return true;
+    });
+
+    console.log('Bewilligte LKs (validated):', bewilligungData.map((b: any) => `${b.lkCode} (${b.jeWoche || 0}×W, ${b.menge || 0}×M)`));
 
     // Originale Rechnungspositionen
     const rechnungPositionen = (invoiceData.rechnungsPositionen || []).map((pos: any) => ({
@@ -274,8 +294,10 @@ export default function Home() {
 
     console.log('Erbrachte Positionen:', rechnungPositionen.filter((p: RechnungsPosition) => !p.istAUB && p.menge > 0).map((p: RechnungsPosition) => `${p.lkCode}: ${p.menge}`));
 
-    // Nur nicht-AUB Positionen für Bewilligungsprüfung
-    let positionen = rechnungPositionen.filter((p: RechnungsPosition) => !p.istAUB && p.menge > 0);
+    // VALIDATION: Filter out positions without lkCode and non-AUB positions
+    let positionen = rechnungPositionen.filter((p: RechnungsPosition) =>
+      p && p.lkCode && !p.istAUB && p.menge > 0
+    );
 
     console.log('\n--- VOR Sonderregeln ---');
     console.log(positionen.map((p: RechnungsPosition) => `${p.lkCode}: ${p.menge} (bewilligt: ${p.bewilligt})`));
@@ -288,7 +310,14 @@ export default function Home() {
 
     // SCHRITT 2: Bewilligungsprüfung und Mengenkürzung
     positionen = positionen.map((pos: RechnungsPosition) => {
-      const bewilligteLK = bewilligungData.find((b: any) => b.lkCode.toUpperCase() === pos.lkCode.toUpperCase());
+      // Skip if position has no lkCode
+      if (!pos || !pos.lkCode) {
+        return { ...pos, menge: 0, gesamt: 0, bewilligt: false };
+      }
+
+      const bewilligteLK = bewilligungData.find((b: any) =>
+        b && b.lkCode && b.lkCode.toUpperCase() === pos.lkCode.toUpperCase()
+      );
 
       if (!bewilligteLK) {
         // Nicht bewilligt → Menge auf 0
