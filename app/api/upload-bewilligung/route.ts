@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const cleanFileName = sanitizeBlobFileName(file.name);
 
     const blob = await put(buildBewilligungBlobPath(file.name), file, {
-      access: 'private',
+      access: 'public',
       addRandomSuffix: false,
     });
 
