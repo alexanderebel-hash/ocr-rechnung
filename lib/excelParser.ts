@@ -22,9 +22,18 @@ export interface ParsedBewilligung {
   }>;
 }
 
-export async function parseExcelBewilligung(filePath: string): Promise<ParsedBewilligung> {
-  const response = await fetch(filePath);
-  const arrayBuffer = await response.arrayBuffer();
+export async function parseExcelBewilligung(source: string | ArrayBuffer): Promise<ParsedBewilligung> {
+  let arrayBuffer: ArrayBuffer;
+
+  if (typeof source === 'string') {
+    const response = await fetch(source);
+    if (!response.ok) {
+      throw new Error(`Fehler beim Laden der Datei (${response.status})`);
+    }
+    arrayBuffer = await response.arrayBuffer();
+  } else {
+    arrayBuffer = source;
+  }
   const workbook = XLSX.read(arrayBuffer);
   const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
   const data = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];

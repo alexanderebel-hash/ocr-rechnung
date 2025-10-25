@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Hero from '@/components/Hero'
 import { KlientenDropdown } from '@/components/KlientenDropdown'
 import PDFUpload from '@/components/PDFUpload'
-import { InvoicePDF } from '@/components/InvoicePDF'
+import { InvoicePDFViewer } from '@/components/InvoicePDFViewer'
 import AdminBewilligungStorage from '@/components/AdminBewilligungStorage'
 
 // LK-Preise (Berliner Pflegesystem 2025)
@@ -403,7 +403,7 @@ export default function Home() {
               Korrekturrechnung
             </h2>
 
-            <InvoicePDF
+            <InvoicePDFViewer
               data={(() => {
                 // Berechne Korrekturrechnung mit allen Sonderregeln
                 const korrektur = berechneKorrekturrechnung();

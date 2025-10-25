@@ -35,9 +35,18 @@ export async function loadBewilligungForKlient(nachname: string) {
   }
 
   try {
-    const result = await parseExcelBewilligung(`/Bewilligungen/${filename}`)
-    console.log(`✅ Excel-Bewilligung geladen für ${nachname}:`, result)
-    return result
+    const response = await fetch(`/api/bewilligung?file=${encodeURIComponent(filename)}`)
+    if (!response.ok) {
+      throw new Error(`Serverantwort: ${response.status}`)
+    }
+
+    const json = await response.json()
+    if (!json?.success || !json?.data) {
+      throw new Error(json?.error || 'Unbekannte Antwort vom Server')
+    }
+
+    console.log(`✅ Excel-Bewilligung geladen für ${nachname}:`, json.data)
+    return json.data
   } catch (error) {
     console.error(`❌ Fehler beim Laden der Excel-Bewilligung für ${nachname}:`, error)
     return null
