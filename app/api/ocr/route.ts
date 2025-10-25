@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.OpenAIOCR || process.env.OPENAI_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'OpenAIOCR oder OPENAI_API_KEY ist nicht konfiguriert. Bitte in Vercel Environment Variables setzen.' },
+        { error: 'ANTHROPIC_API_KEY oder CLAUDE_API_KEY ist nicht konfiguriert. Bitte in Vercel Environment Variables setzen.' },
         { status: 500 }
       );
     }
 
-    const openai = new OpenAI({
+    const anthropic = new Anthropic({
       apiKey: apiKey,
     });
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const type = formData.get('type') as string; // 'bewilligung' oder 'rechnung'
@@ -26,94 +27,69 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ungültiger Typ' }, { status: 400 });
     }
 
-    // Convert PDF to buffer for upload
+    // Convert PDF to base64
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const base64PDF = buffer.toString('base64');
 
     // Prepare prompt based on document type
     const prompt = type === 'bewilligung' ? getBewilligungPrompt() : getRechnungPrompt();
 
-    // Upload PDF to OpenAI (vision purpose enables multimodal parsing)
-    const filename =
-      (file as any).name && typeof (file as any).name === 'string'
-        ? (file as any).name
-        : `${type}-upload-${Date.now()}.pdf`;
+    console.log(`📄 Processing ${type} PDF with Claude...`);
 
-    const fileForUpload = await OpenAI.toFile(buffer, filename, {
-      type: 'application/pdf',
+    // Call Claude API with PDF
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 4096,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: base64PDF,
+              },
+            },
+            {
+              type: 'text',
+              text: prompt,
+            },
+          ],
+        },
+      ],
     });
 
-    const vectorStore = await openai.vectorStores.create({
-      name: `ocr-${type}-${Date.now()}`,
-    });
+    // Extract text from Claude's response
+    let outputText = '';
+    for (const content of message.content) {
+      if (content.type === 'text') {
+        outputText += content.text;
+      }
+    }
+
+    console.log('✅ Claude response received');
+
+    if (!outputText) {
+      return NextResponse.json(
+        {
+          error: 'Keine strukturierten Daten gefunden',
+          details: 'Claude hat keine Antwort zurückgegeben',
+        },
+        { status: 500 }
+      );
+    }
+
+    // Remove markdown code blocks if present
+    let jsonText = outputText.trim();
+    const jsonMatch = jsonText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+    if (jsonMatch) {
+      jsonText = jsonMatch[1].trim();
+    }
 
     try {
-      await openai.vectorStores.fileBatches.uploadAndPoll(vectorStore.id, {
-        files: [fileForUpload],
-      });
-
-      // Create an assistant with file search capability
-      const assistant = await openai.beta.assistants.create({
-        model: 'gpt-4o-mini',
-        instructions: 'Du bist ein Experte für die Extraktion strukturierter Daten aus PDFs. Antworte nur mit validen JSON-Daten.',
-        tools: [{ type: 'file_search' }],
-        tool_resources: {
-          file_search: {
-            vector_store_ids: [vectorStore.id]
-          }
-        }
-      });
-
-      // Create a thread
-      const thread = await openai.beta.threads.create();
-
-      // Add message to thread
-      await openai.beta.threads.messages.create(thread.id, {
-        role: 'user',
-        content: `${prompt}\n\nNutze das angehängte PDF in der Wissensdatenbank.`
-      });
-
-      // Run the assistant
-      const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
-        assistant_id: assistant.id,
-        max_completion_tokens: 4096
-      });
-
-      // Get messages
-      const messages = await openai.beta.threads.messages.list(thread.id);
-      const assistantMessage = messages.data.find(m => m.role === 'assistant');
-
-      // Extract text from message
-      let outputText = '';
-      if (assistantMessage) {
-        for (const content of assistantMessage.content) {
-          if (content.type === 'text') {
-            outputText += content.text.value;
-          }
-        }
-      }
-
-      // Cleanup assistant and thread
-      await openai.beta.assistants.del(assistant.id).catch(console.warn);
-      await openai.beta.threads.del(thread.id).catch(console.warn);
-
-      if (!outputText) {
-        return NextResponse.json(
-          {
-            error: 'Keine strukturierten Daten gefunden',
-            details: 'Der Assistant hat keine Antwort zurückgegeben',
-          },
-          { status: 500 }
-        );
-      }
-
-      // Remove markdown code blocks if present
-      let jsonText = outputText.trim();
-      const jsonMatch = jsonText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-      if (jsonMatch) {
-        jsonText = jsonMatch[1].trim();
-      }
-
       const extractedData = JSON.parse(jsonText);
 
       return NextResponse.json({
@@ -121,10 +97,18 @@ export async function POST(request: NextRequest) {
         type,
         data: extractedData,
       });
-    } finally {
-      void openai.vectorStores.del(vectorStore.id).catch((err) => {
-        console.warn('OpenAI vector store cleanup failed:', err);
-      });
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      console.error('Raw output:', outputText);
+
+      return NextResponse.json(
+        {
+          error: 'Konnte JSON nicht parsen',
+          details: parseError instanceof Error ? parseError.message : 'Unknown error',
+          rawOutput: outputText.substring(0, 500), // First 500 chars for debugging
+        },
+        { status: 500 }
+      );
     }
 
   } catch (error) {
