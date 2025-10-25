@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`📄 Processing ${type} PDF with Claude...`);
 
-    // Call Claude API with PDF (using beta PDF support)
+    // Call Claude API with PDF (using prompt caching for better performance)
     const message = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: 4096,
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
           ],
         },
       ],
-      betas: ['pdfs-2024-09-25'],
+      betas: ['prompt-caching-2024-07-31'],
     } as any);
 
     // Extract text from Claude's response
