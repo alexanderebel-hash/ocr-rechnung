@@ -1,8 +1,19 @@
 'use client';
 
-import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
+import dynamic from 'next/dynamic';
 import { InvoicePDF } from './InvoicePDF';
 import { useState, useEffect } from 'react';
+
+// Dynamically import PDFViewer and PDFDownloadLink to avoid SSR issues
+const PDFDownloadLink = dynamic(
+  () => import('@react-pdf/renderer').then((mod) => mod.PDFDownloadLink),
+  { ssr: false }
+);
+
+const PDFViewer = dynamic(
+  () => import('@react-pdf/renderer').then((mod) => mod.PDFViewer),
+  { ssr: false }
+);
 
 interface InvoicePDFViewerProps {
   data: any;
@@ -35,10 +46,10 @@ export function InvoicePDFViewer({ data }: InvoicePDFViewerProps) {
           fileName={`Korrekturrechnung_${data.klient?.name || 'Rechnung'}_${new Date().toISOString().split('T')[0]}.pdf`}
           className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors inline-flex items-center gap-2"
         >
-          {({ loading }) =>
+          {({ loading }: { loading: boolean }) =>
             loading ? (
               <>
-                <div className="w-5 h-5">
+                <div className="w-5 h-5 relative">
                   <div className="absolute inset-0 rounded-full border-2 border-white/30"></div>
                   <div className="absolute inset-0 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
                 </div>
