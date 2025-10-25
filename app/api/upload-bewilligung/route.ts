@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
+import { buildBewilligungBlobPath, sanitizeBlobFileName } from '@/lib/blobUtils';
 
 export const runtime = 'edge';
 
@@ -27,13 +28,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cleanFileName = file.name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+    const cleanFileName = sanitizeBlobFileName(file.name);
 
-    const blob = await put(`bewilligungen/${cleanFileName}`, file, {
-      access: 'public',
+    const blob = await put(buildBewilligungBlobPath(file.name), file, {
+      access: 'private',
       addRandomSuffix: false,
     });
 
