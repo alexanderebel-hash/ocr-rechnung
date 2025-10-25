@@ -1,4 +1,4 @@
-import { loadBewilligungForKlient, getAllKlientenNames } from './bewilligungLoader';
+import { findBewilligungByKlientName, getAllKlientenNamesFromBlob } from './bewilligungLoaderDynamic';
 
 export interface Klient {
   id: string;
@@ -46,11 +46,13 @@ export async function loadAllKlienten(): Promise<Klient[]> {
 
 async function loadKlientenWithExcelBewilligungen(): Promise<Klient[]> {
   const klientenWithBewilligungen: Klient[] = [];
-  const klientenNames = getAllKlientenNames();
+  const klientenNames = await getAllKlientenNamesFromBlob();
+
+  console.log(`📋 Found ${klientenNames.length} clients in Blob storage:`, klientenNames);
 
   for (const nachname of klientenNames) {
     try {
-      const excelData = await loadBewilligungForKlient(nachname);
+      const excelData = await findBewilligungByKlientName(nachname);
 
       if (excelData) {
         // Convert Excel data to Klient format
