@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
+import { runOcr } from '@/utils/ocrClient';
 
 interface BewilligungRow {
   lkCode: string;
@@ -75,22 +76,8 @@ export default function PDFUpload({ type, onDataExtracted }: PDFUploadProps) {
     setError('');
 
     try {
-      const formData = new FormData();
-      formData.append('file', fileToProcess);
-      formData.append('type', type);
-
-      const response = await fetch('/api/ocr', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'OCR-Processing fehlgeschlagen');
-      }
-
-      if (result.success && result.data) {
+      const result = await runOcr(fileToProcess, type);
+      if (result?.data) {
         onDataExtracted(result.data);
         setSuccess(true);
       } else {

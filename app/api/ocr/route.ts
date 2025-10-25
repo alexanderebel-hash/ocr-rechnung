@@ -1,192 +1,160 @@
-import { NextRequest, NextResponse } from 'next/server';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Anthropic from '@anthropic-ai/sdk';
 
-export async function POST(request: NextRequest) {
+export const runtime = 'nodejs';
+
+const MAX_FILE_BYTES = 32 * 1024 * 1024;
+const ALLOWED_TYPES = new Set(['application/pdf']);
+
+export async function POST(req: Request) {
   try {
-    const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || process.env.ClaudeOCR;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'ANTHROPIC_API_KEY, CLAUDE_API_KEY oder ClaudeOCR ist nicht konfiguriert. Bitte in Vercel Environment Variables setzen.' },
-        { status: 500 }
-      );
-    }
-
-    const anthropic = new Anthropic({
-      apiKey: apiKey,
-    });
-
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const type = formData.get('type') as string; // 'bewilligung' oder 'rechnung'
+    const form = await req.formData();
+    const file = form.get('file') as File | null;
+    const type = String(form.get('type') || '').toLowerCase();
 
     if (!file) {
-      return NextResponse.json({ error: 'Keine Datei hochgeladen' }, { status: 400 });
+      return jsonError('Keine Datei übergeben.', 400);
+    }
+    if (!['bewilligung', 'rechnung'].includes(type)) {
+      return jsonError('Ungültiger "type". Erlaubt: "bewilligung" | "rechnung".', 400);
+    }
+    if (!ALLOWED_TYPES.has(file.type)) {
+      return jsonError(`Ungültiger Content-Type: ${file.type || 'unbekannt'}. Nur PDF erlaubt.`, 400);
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      return jsonError(`PDF zu groß (${formatBytes(file.size)}). Maximal ${formatBytes(MAX_FILE_BYTES)}.`, 413);
     }
 
-    if (!type || !['bewilligung', 'rechnung'].includes(type)) {
-      return NextResponse.json({ error: 'Ungültiger Typ' }, { status: 400 });
+    const arrayBuf = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuf);
+    const pdfBase64 = buffer.toString('base64');
+
+    const approxPages = approxPdfPageCount(buffer);
+    if (approxPages && approxPages > 100) {
+      return jsonError(`PDF hat vermutlich ${approxPages} Seiten. Maximal 100 Seiten unterstützt.`, 413);
     }
 
-    // Convert PDF to base64
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64PDF = buffer.toString('base64');
+    const prompt = type === 'bewilligung' ? buildBewilligungPrompt() : buildRechnungPrompt();
 
-    // Prepare prompt based on document type
-    const prompt = type === 'bewilligung' ? getBewilligungPrompt() : getRechnungPrompt();
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return jsonError('Server-Fehler: ANTHROPIC_API_KEY nicht gesetzt.', 500);
+    }
+    const client = new Anthropic({ apiKey });
 
-    console.log(`📄 Processing ${type} PDF with Claude...`);
-
-    // Call Claude API with PDF (using prompt caching for better performance)
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 4096,
+    const message = await client.messages.create({
+      model: process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-5',
+      max_tokens: 2048,
       messages: [
         {
           role: 'user',
           content: [
             {
-              type: 'document' as any,
+              type: 'document',
               source: {
                 type: 'base64',
                 media_type: 'application/pdf',
-                data: base64PDF,
+                data: pdfBase64,
               },
             },
-            {
-              type: 'text',
-              text: prompt,
-            },
+            { type: 'text', text: prompt },
           ],
         },
       ],
-      betas: ['prompt-caching-2024-07-31'],
-    } as any);
+    });
 
-    // Extract text from Claude's response
-    let outputText = '';
-    for (const content of message.content) {
-      if (content.type === 'text') {
-        outputText += content.text;
-      }
-    }
+    const outputText = (message.content ?? [])
+      .filter((p: any) => p?.type === 'text')
+      .map((p: any) => p.text)
+      .join('\n')
+      .trim();
 
-    console.log('✅ Claude response received');
+    const data = safeExtractJson(outputText);
 
-    if (!outputText) {
-      return NextResponse.json(
-        {
-          error: 'Keine strukturierten Daten gefunden',
-          details: 'Claude hat keine Antwort zurückgegeben',
-        },
-        { status: 500 }
-      );
-    }
-
-    // Remove markdown code blocks if present
-    let jsonText = outputText.trim();
-    const jsonMatch = jsonText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-    if (jsonMatch) {
-      jsonText = jsonMatch[1].trim();
-    }
-
-    try {
-      const extractedData = JSON.parse(jsonText);
-
-      return NextResponse.json({
-        success: true,
-        type,
-        data: extractedData,
-      });
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      console.error('Raw output:', outputText);
-
-      return NextResponse.json(
-        {
-          error: 'Konnte JSON nicht parsen',
-          details: parseError instanceof Error ? parseError.message : 'Unknown error',
-          rawOutput: outputText.substring(0, 500), // First 500 chars for debugging
-        },
-        { status: 500 }
-      );
-    }
-
-  } catch (error) {
-    console.error('OCR Error:', error);
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Unbekannter Fehler beim OCR-Processing',
-        details: error
-      },
-      { status: 500 }
-    );
+    return Response.json({
+      success: true,
+      meta: { approxPages },
+      data,
+      raw: outputText,
+    });
+  } catch (err: any) {
+    const msg = err?.message || 'Unbekannter Serverfehler';
+    const code = asHttpStatus(err?.status) ?? 500;
+    return jsonError(`OCR-Processing fehlgeschlagen: ${msg}`, code, err);
   }
 }
 
-function getBewilligungPrompt(): string {
-  return `Analysiere dieses Bewilligungs-PDF und extrahiere die folgenden Informationen in JSON-Format:
-
-{
-  "klientData": {
-    "name": "Name des Klienten (Nachname, Vorname)",
-    "zeitraumVon": "Start-Datum im Format YYYY-MM-DD",
-    "zeitraumBis": "End-Datum im Format YYYY-MM-DD",
-    "geburtsdatum": "Geburtsdatum im Format YYYY-MM-DD",
-    "pflegegrad": Pflegegrad als Zahl (2-5),
-    "debitor": "Debitor-Nummer falls vorhanden",
-    "belegNr": "Beleg-Nummer falls vorhanden",
-    "genehmigungsDatum": "Genehmigungsdatum im Format DD.MM.YYYY",
-    "genehmigungsNr": "Genehmigungsnummer"
-  },
-  "bewilligung": [
-    {
-      "lkCode": "LK-Code (z.B. LK01, LK02, etc.)",
-      "bezeichnung": "Leistungsbezeichnung",
-      "jeWoche": Anzahl je Woche als Zahl,
-      "jeMonat": Anzahl je Monat als Zahl
-    }
-  ],
-  "investitionskosten": "Investitionskosten falls vorhanden, sonst null"
+function jsonError(message: string, status = 400, details?: any) {
+  return new Response(JSON.stringify({ success: false, error: message, details }), {
+    status,
+    headers: { 'content-type': 'application/json; charset=utf-8' },
+  });
 }
 
-WICHTIG:
-- Extrahiere ALLE LK-Codes mit ihren Mengen
-- Achte auf die korrekte Schreibweise der LK-Codes (z.B. LK01, LK02, LK03A, LK03B, etc.)
-- "Je Woche" und "Je Monat" sind Zahlen
-- Gib NUR das JSON zurück, keine zusätzlichen Erklärungen`;
+function asHttpStatus(maybe: any): number | undefined {
+  if (typeof maybe === 'number' && maybe >= 400 && maybe <= 599) return maybe;
+  return undefined;
 }
 
-function getRechnungPrompt(): string {
-  return `Analysiere dieses Rechnungs-PDF und extrahiere die folgenden Informationen in JSON-Format:
-
-{
-  "rechnungsPositionen": [
-    {
-      "lkCode": "LK-Code (z.B. LK01, LK02, etc.)",
-      "bezeichnung": "Leistungsbezeichnung",
-      "menge": Anzahl/Menge als Zahl,
-      "preis": Einzelpreis als Zahl (mit Dezimalpunkt),
-      "gesamt": Gesamtbetrag als Zahl (mit Dezimalpunkt),
-      "istAUB": true falls es eine AUB-Position ist, sonst false
-    }
-  ],
-  "zinv": "ZINV-Betrag falls vorhanden, sonst null",
-  "gesamtbetrag": Gesamtbetrag der Rechnung als Zahl,
-  "abrechnungszeitraumVon": "Start-Datum des Abrechnungszeitraums im Format YYYY-MM-DD",
-  "abrechnungszeitraumBis": "End-Datum des Abrechnungszeitraums im Format YYYY-MM-DD",
-  "pflegedienstIK": "IK-Nummer des Pflegedienstes (z.B. 461104151 oder 461104096)",
-  "wohnheimAdresse": "Adresse des Wohnheims falls vorhanden (Straße und Hausnummer)"
+function formatBytes(n: number) {
+  if (n < 1024) return `${n} B`;
+  const kb = n / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  const mb = kb / 1024;
+  return `${mb.toFixed(2)} MB`;
 }
 
-WICHTIG:
-- Extrahiere ALLE Rechnungspositionen (sowohl normale LK-Codes als auch AUB-Positionen)
-- AUB-Positionen sind oft mit "AUB" oder "Ausbildungsumlage" gekennzeichnet
-- Preise und Beträge mit Dezimalpunkt (nicht Komma)
-- Berechne gesamt = menge * preis falls nicht direkt angegeben
-- ZINV steht für "Zusätzliche Investitionskosten"
-- Extrahiere den Abrechnungszeitraum (z.B. "2025-09-01 bis 2025-09-30")
-- Extrahiere die IK-Nummer des Pflegedienstes (461104151 = Kreuzberg, 461104096 = Treptow)
-- Extrahiere die Wohnheim-Adresse falls sichtbar (Hartriegelstr. 132 = Hebron, Waldemarstr. 10a = Siefos)
-- Gib NUR das JSON zurück, keine zusätzlichen Erklärungen`;
+function approxPdfPageCount(buf: Buffer): number | null {
+  try {
+    const txt = buf.toString('latin1');
+    const m = txt.match(/\/Type\s*\/Page\b/g);
+    return m ? m.length : null;
+  } catch {
+    return null;
+  }
+}
+
+function buildBewilligungPrompt(): string {
+  return [
+    'Du bist ein präziser Extraktor. Lies das angehängte PDF (Pflegekassen-Bewilligung, DE).',
+    'Gib **ausschließlich** folgendes JSON zurück (keine Kommentare, kein Freitext):',
+    '{',
+    '  "klient": { "nachname": "", "vorname": "" },',
+    '  "zeitraum": { "von": "", "bis": "" },',
+    '  "leistungen": [',
+    '    { "leistungsart": "", "menge": "", "einheit": "" }',
+    '  ],',
+    '  "kasse": "",',
+    '  "versichertennummer": ""',
+    '}',
+  ].join('\n');
+}
+
+function buildRechnungPrompt(): string {
+  return [
+    'Du bist ein präziser Extraktor. Lies das angehängte PDF (Rechnung, DE).',
+    'Gib **ausschließlich** folgendes JSON zurück (keine Kommentare, kein Freitext):',
+    '{',
+    '  "rechnungsnummer": "",',
+    '  "rechnungsdatum": "",',
+    '  "klient": { "nachname": "", "vorname": "" },',
+    '  "positionen": [',
+    '    { "beschreibung": "", "menge": "", "einheit": "", "einzelpreis": "", "gesamt": "" }',
+    '  ],',
+    '  "summe_netto": "",',
+    '  "mwst": "",',
+    '  "summe_brutto": ""',
+    '}',
+  ].join('\n');
+}
+
+function safeExtractJson(text: string): any | null {
+  if (!text) return null;
+  const match = text.match(/\{[\s\S]*\}$/m);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[0]);
+  } catch {
+    return null;
+  }
 }

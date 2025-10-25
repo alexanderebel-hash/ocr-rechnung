@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
+import { runOcr } from '@/utils/ocrClient';
 import * as XLSX from 'xlsx';
 
 interface BewilligungRow {
@@ -75,22 +76,8 @@ export default function BewilligungUpload({ onDataExtracted }: BewilligungUpload
     setError('');
 
     try {
-      const formData = new FormData();
-      formData.append('file', fileToProcess);
-      formData.append('type', 'bewilligung');
-
-      const response = await fetch('/api/ocr', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'OCR-Processing fehlgeschlagen');
-      }
-
-      if (result.success && result.data) {
+      const result = await runOcr(fileToProcess, 'bewilligung');
+      if (result?.data) {
         onDataExtracted(result.data);
         setSuccess(true);
       } else {
