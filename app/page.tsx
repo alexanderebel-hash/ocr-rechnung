@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Hero from '@/components/Hero'
 import { KlientenDropdown } from '@/components/KlientenDropdown'
 import PDFUpload from '@/components/PDFUpload'
 import { InvoicePDFViewer } from '@/components/InvoicePDFViewer'
 import AdminBewilligungStorage from '@/components/AdminBewilligungStorage'
+import { findBewilligungFilename } from '@/lib/bewilligungMapping'
 
 // LK-Preise (Berliner Pflegesystem 2025)
 const LK_PREISE: Record<string, { bezeichnung: string; preis: number }> = {
@@ -46,6 +47,29 @@ export default function Home() {
   const [selectedKlient, setSelectedKlient] = useState<any>(null)
   const [bewilligung, setBewilligung] = useState<any>(null)
   const [invoiceData, setInvoiceData] = useState<any>(null)
+  const [availableBewilligungen, setAvailableBewilligungen] = useState<any[]>([])
+  const [showManualBewilligungSelect, setShowManualBewilligungSelect] = useState(false)
+  const [isLoadingBewilligung, setIsLoadingBewilligung] = useState(false)
+  const [bewilligungError, setBewilligungError] = useState('')
+
+  // Load available bewilligungen on mount
+  useEffect(() => {
+    const loadBewilligungen = async () => {
+      try {
+        const response = await fetch('/api/bewilligungen/list')
+        const data = await response.json()
+
+        if (data.success && data.bewilligungen) {
+          setAvailableBewilligungen(data.bewilligungen)
+          console.log('📂 Available bewilligungen:', data.bewilligungen.map((b: any) => b.filename))
+        }
+      } catch (error) {
+        console.error('❌ Error loading bewilligungen list:', error)
+      }
+    }
+
+    loadBewilligungen()
+  }, [])
 
   // Sonderregeln für Pflegeabrechnung
   const wendeSonderregelnAn = (positionen: RechnungsPosition[], bewilligungData: any[]): RechnungsPosition[] => {
@@ -330,6 +354,74 @@ export default function Home() {
     };
   };
 
+  // Auto-load bewilligung when client is selected
+  const handleKlientSelect = async (klient: any) => {
+    console.log('✓ Klient selected:', klient.name)
+    setSelectedKlient(klient)
+    setBewilligungError('')
+    setShowManualBewilligungSelect(false)
+
+    // Try to automatically find and load bewilligung
+    let bewilligungFilename = null
+
+    // Strategy 1: If client has bewilligung_filename field
+    if (klient.bewilligung_filename) {
+      bewilligungFilename = klient.bewilligung_filename
+      console.log('📎 Bewilligung from DB:', bewilligungFilename)
+    }
+    // Strategy 2: Auto-match from available files
+    else if (availableBewilligungen.length > 0) {
+      const filenames = availableBewilligungen.map((b: any) => b.filename)
+      bewilligungFilename = findBewilligungFilename(klient.name, filenames)
+    }
+
+    // Load bewilligung from Blob
+    if (bewilligungFilename) {
+      await loadBewilligungFromBlob(bewilligungFilename)
+    } else {
+      console.warn('⚠️  No bewilligung found automatically, showing manual selection')
+      setShowManualBewilligungSelect(true)
+    }
+
+    // Also try to load from client's bewilligungen array (fallback)
+    if (!bewilligungFilename && klient.bewilligungen && klient.bewilligungen.length > 0) {
+      console.log('📋 Using bewilligung from client data')
+      setBewilligung(klient.bewilligungen[0])
+    }
+  }
+
+  // Load bewilligung from Blob storage
+  const loadBewilligungFromBlob = async (filename: string) => {
+    try {
+      setIsLoadingBewilligung(true)
+      console.log('⬇️  Loading bewilligung:', filename)
+
+      const response = await fetch(`/api/bewilligung?file=${encodeURIComponent(filename)}`)
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to load bewilligung')
+      }
+
+      console.log('✅ Bewilligung loaded:', data.data.leistungen?.length || 0, 'services')
+      setBewilligung(data.data)
+      setBewilligungError('')
+      setShowManualBewilligungSelect(false)
+
+    } catch (error: any) {
+      console.error('❌ Error loading bewilligung:', error)
+      setBewilligungError(`Failed to load: ${error.message}`)
+      setShowManualBewilligungSelect(true)
+    } finally {
+      setIsLoadingBewilligung(false)
+    }
+  }
+
+  // Manual bewilligung selection handler
+  const handleManualBewilligungLoad = async (filename: string) => {
+    await loadBewilligungFromBlob(filename)
+  }
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Hero />
@@ -346,22 +438,28 @@ export default function Home() {
           </h2>
 
           <KlientenDropdown
-            onSelect={(klient) => {
-              setSelectedKlient(klient)
-              // Automatisch die erste Bewilligung laden
-              if (klient.bewilligungen && klient.bewilligungen.length > 0) {
-                setBewilligung(klient.bewilligungen[0])
-              }
-              console.log('Klient ausgewählt:', klient)
-            }}
+            onSelect={handleKlientSelect}
             onNewKlient={() => {
               console.log('Neuen Klient anlegen')
               // TODO: Modal zum Anlegen eines neuen Klienten
             }}
           />
 
+          {/* Loading indicator */}
+          {isLoadingBewilligung && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="relative w-5 h-5">
+                  <div className="absolute inset-0 rounded-full border-2 border-blue-600"></div>
+                  <div className="absolute inset-0 rounded-full border-2 border-blue-400 border-t-transparent animate-spin"></div>
+                </div>
+                <p className="text-blue-800 font-medium">Lade Bewilligung...</p>
+              </div>
+            </div>
+          )}
+
           {/* Bewilligungs-Info */}
-          {selectedKlient && bewilligung && (
+          {selectedKlient && bewilligung && !isLoadingBewilligung && (
             <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-start gap-3">
                 <div className="text-green-600 text-xl">✅</div>
@@ -376,13 +474,94 @@ export default function Home() {
                     </p>
                     <p>
                       <span className="font-medium">Gültig:</span>{' '}
-                      {new Date(bewilligung.gueltig_von).toLocaleDateString('de-DE')}
-                      {' bis '}
-                      {new Date(bewilligung.gueltig_bis).toLocaleDateString('de-DE')}
+                      {bewilligung.zeitraum ? (
+                        <>
+                          {new Date(bewilligung.zeitraum.von).toLocaleDateString('de-DE')}
+                          {' bis '}
+                          {new Date(bewilligung.zeitraum.bis).toLocaleDateString('de-DE')}
+                        </>
+                      ) : bewilligung.gueltig_von ? (
+                        <>
+                          {new Date(bewilligung.gueltig_von).toLocaleDateString('de-DE')}
+                          {' bis '}
+                          {new Date(bewilligung.gueltig_bis).toLocaleDateString('de-DE')}
+                        </>
+                      ) : 'Datum nicht verfügbar'}
+                    </p>
+                    <p>
+                      <span className="font-medium">Leistungen:</span>{' '}
+                      {bewilligung.leistungen?.length || 0}
                     </p>
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Error message */}
+          {bewilligungError && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="text-red-600 text-xl">⚠️</div>
+                <div className="flex-1">
+                  <p className="font-medium text-red-900 mb-1">Fehler beim Laden</p>
+                  <p className="text-sm text-red-700">{bewilligungError}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Manual bewilligung selection */}
+          {selectedKlient && showManualBewilligungSelect && (
+            <div className="mt-4 p-4 border-2 border-orange-300 rounded-lg bg-orange-50">
+              <h3 className="font-bold text-orange-800 mb-2 flex items-center gap-2">
+                <span>⚠️</span>
+                <span>Keine Bewilligung automatisch gefunden</span>
+              </h3>
+              <p className="text-sm mb-3 text-orange-700">
+                Bitte wähle die passende Bewilligung manuell aus:
+              </p>
+
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleManualBewilligungLoad(e.target.value)
+                  }
+                }}
+                className="w-full border border-orange-300 rounded px-3 py-2 bg-white focus:ring-2 focus:ring-orange-500"
+                defaultValue=""
+              >
+                <option value="">-- Bewilligung wählen --</option>
+                {availableBewilligungen.map((bewil: any) => (
+                  <option key={bewil.filename} value={bewil.filename}>
+                    {bewil.filename}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Debug: Show available bewilligungen */}
+          {availableBewilligungen.length > 0 && (
+            <div className="mt-4 bg-gray-50 p-4 rounded border">
+              <details>
+                <summary className="cursor-pointer font-bold text-gray-700 hover:text-gray-900">
+                  📋 Verfügbare Bewilligungen im Blob ({availableBewilligungen.length})
+                </summary>
+                <ul className="mt-3 space-y-2">
+                  {availableBewilligungen.map((bewil: any) => (
+                    <li key={bewil.filename} className="flex items-center justify-between text-sm bg-white p-2 rounded border">
+                      <span className="font-mono text-gray-700">{bewil.filename}</span>
+                      <button
+                        onClick={() => handleManualBewilligungLoad(bewil.filename)}
+                        className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition-colors"
+                      >
+                        Laden
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </details>
             </div>
           )}
         </div>
