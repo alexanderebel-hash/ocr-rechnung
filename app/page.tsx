@@ -4,7 +4,8 @@ import { useState } from 'react'
 import Hero from '@/components/Hero'
 import PDFUpload from '@/components/PDFUpload'
 import { InvoicePDFViewer } from '@/components/InvoicePDFViewer'
-import BlobBewilligungPicker from '@/components/BlobBewilligungPicker'
+import BewilligungDropdown from '@/components/BewilligungDropdown'
+import RechnungsVorschau from '@/components/RechnungsVorschau'
 import { computeCorrection, type Bewilligung as BillingBewilligung, type Invoice as BillingInvoice } from '@/lib/billing/calc'
 import { PRICES, AUB } from '@/lib/billing/prices'
 
@@ -46,7 +47,9 @@ interface RechnungsPosition {
 export default function Home() {
   const [bewilligung, setBewilligung] = useState<any>(null)
   const [bewilligungMeta, setBewilligungMeta] = useState<any>(null)
+  const [bewilligungConfirmed, setBewilligungConfirmed] = useState(false)
   const [invoiceData, setInvoiceData] = useState<any>(null)
+  const [isUploadingInvoice, setIsUploadingInvoice] = useState(false)
 
   // Berechne Korrekturrechnung mit neuer Billing Engine
   const berechneKorrekturrechnung = () => {
@@ -167,10 +170,10 @@ export default function Home() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
 
-        {/* Blob Bewilligung Picker - Cold Load */}
-        <BlobBewilligungPicker
-          onBewilligungLoaded={(data, meta) => {
-            console.log('✅ Bewilligung geladen:', meta.filename);
+        {/* Bewilligung Dropdown mit Vorschau und Bearbeitung */}
+        <BewilligungDropdown
+          onBewilligungConfirmed={(data, meta) => {
+            console.log('✅ Bewilligung bestätigt:', meta.filename);
             console.log('Klient:', `${data.klient.vorname} ${data.klient.nachname}`);
             console.log('Zeitraum:', `${data.zeitraum.von} - ${data.zeitraum.bis}`);
             console.log('Leistungen:', data.leistungen.length);
@@ -189,17 +192,18 @@ export default function Home() {
 
             setBewilligung(transformedBewilligung);
             setBewilligungMeta(meta);
+            setBewilligungConfirmed(true);
           }}
         />
 
-        {/* Bewilligungs-Info */}
-        {bewilligung && (
+        {/* Bewilligungs-Bestätigung */}
+        {bewilligungConfirmed && bewilligung && (
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="flex items-start gap-3">
               <div className="text-green-600 text-2xl">✅</div>
               <div className="flex-1">
                 <p className="font-semibold text-green-900 text-lg mb-2">
-                  Bewilligung geladen
+                  Bewilligung bestätigt
                 </p>
                 <div className="text-sm text-gray-700 space-y-1">
                   <p>
@@ -229,22 +233,31 @@ export default function Home() {
           </div>
         )}
 
-        {/* PDF Upload - nur aktiv wenn Bewilligung geladen */}
-        {!bewilligung && (
+        {/* PDF Upload - nur aktiv wenn Bewilligung bestätigt */}
+        {!bewilligungConfirmed && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
             <p className="text-yellow-800 text-center">
-              ⚠️ Bitte zuerst eine Bewilligung aus dem Blob laden
+              ⚠️ Bitte zuerst eine Bewilligung auswählen, bearbeiten und bestätigen
             </p>
           </div>
         )}
 
-        {bewilligung && (
+        {bewilligungConfirmed && (
           <PDFUpload
             type="rechnung"
             onDataExtracted={(data) => {
               setInvoiceData(data)
+              setIsUploadingInvoice(false)
               console.log('Rechnung analysiert:', data)
             }}
+          />
+        )}
+
+        {/* Rechnungsvorschau */}
+        {bewilligungConfirmed && (
+          <RechnungsVorschau
+            rechnungsDaten={invoiceData}
+            isLoading={isUploadingInvoice}
           />
         )}
 
@@ -302,9 +315,12 @@ export default function Home() {
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
           <h3 className="font-semibold text-blue-900 mb-2">ℹ️ Workflow:</h3>
           <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
-            <li>Bewilligung aus Blob-Storage laden (Cold Fetch)</li>
-            <li>Rechnung (PDF) hochladen → Claude analysiert via OCR</li>
-            <li>Korrekturrechnung wird gemäß Bewilligung erstellt</li>
+            <li>Bewilligung aus Dropdown auswählen (alphabetisch sortiert nach Nachname, Vorname)</li>
+            <li>Bewilligungsdaten in Vorschau prüfen und bei Bedarf bearbeiten</li>
+            <li>Auf "Bewilligungsdaten für Korrekturrechnung verwenden" klicken</li>
+            <li>Originalrechnung (PDF) hochladen → Claude analysiert via OCR</li>
+            <li>Vorschau der Originalrechnung prüfen</li>
+            <li>Korrekturrechnung wird automatisch gemäß Bewilligung erstellt</li>
             <li>PDF herunterladen und verwenden</li>
           </ol>
         </div>
