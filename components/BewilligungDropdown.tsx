@@ -87,7 +87,13 @@ export default function BewilligungDropdown({ onBewilligungConfirmed }: Bewillig
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Laden fehlgeschlagen');
 
-      setBewilligungData(json.data);
+      // Ensure leistungen array exists
+      const data = {
+        ...json.data,
+        leistungen: json.data.leistungen || [],
+      };
+
+      setBewilligungData(data);
       setBewilligungMeta(json.meta);
       setIsEditing(false);
     } catch (err: any) {
@@ -355,7 +361,7 @@ export default function BewilligungDropdown({ onBewilligungConfirmed }: Bewillig
           <div className="bg-gray-50 rounded-lg p-4 mb-4">
             <div className="flex items-center justify-between mb-3">
               <h4 className="font-semibold text-gray-900">
-                Leistungen ({bewilligungData.leistungen.length})
+                Leistungen ({bewilligungData.leistungen?.length || 0})
               </h4>
               {isEditing && (
                 <button
@@ -367,7 +373,7 @@ export default function BewilligungDropdown({ onBewilligungConfirmed }: Bewillig
               )}
             </div>
 
-            {bewilligungData.leistungen.length === 0 ? (
+            {!bewilligungData.leistungen || bewilligungData.leistungen.length === 0 ? (
               <p className="text-gray-500 text-sm">Keine Leistungen vorhanden</p>
             ) : (
               <div className="space-y-3">
