@@ -5,6 +5,8 @@ import Hero from '@/components/Hero'
 import PDFUpload from '@/components/PDFUpload'
 import { InvoicePDFViewer } from '@/components/InvoicePDFViewer'
 import BlobBewilligungPicker from '@/components/BlobBewilligungPicker'
+import { computeCorrection, type Bewilligung as BillingBewilligung, type Invoice as BillingInvoice } from '@/lib/billing/calc'
+import { PRICES, AUB } from '@/lib/billing/prices'
 
 // LK-Preise (Berliner Pflegesystem 2025)
 const LK_PREISE: Record<string, { bezeichnung: string; preis: number }> = {
@@ -46,319 +48,119 @@ export default function Home() {
   const [bewilligungMeta, setBewilligungMeta] = useState<any>(null)
   const [invoiceData, setInvoiceData] = useState<any>(null)
 
-  // Sonderregeln für Pflegeabrechnung
-  const wendeSonderregelnAn = (positionen: RechnungsPosition[], bewilligungData: any[]): RechnungsPosition[] => {
-    let result = [...positionen];
-
-    // Helper function: Safe bewilligung lookup
-    const findBewilligungSafe = (lkCode: string) => {
-      return bewilligungData.find(b =>
-        b && b.lkCode && b.lkCode.toUpperCase() === lkCode.toUpperCase()
-      );
-    };
-
-    // Helper function: Safe position lookup
-    const findPositionSafe = (lkCode: string) => {
-      return result.find(p =>
-        p && p.lkCode && p.lkCode.toUpperCase() === lkCode.toUpperCase()
-      );
-    };
-
-    // ============================================
-    // SONDERREGEL 1: LK14 → LK15
-    // Warme Mahlzeit → Kleine Mahlzeit
-    // ============================================
-    const lk14Pos = findPositionSafe('LK14');
-    const lk15Pos = findPositionSafe('LK15');
-    const lk14Bewilligt = findBewilligungSafe('LK14');
-    const lk15Bewilligt = findBewilligungSafe('LK15');
-
-    if (lk14Pos && lk14Pos.menge > 0 && !lk14Bewilligt && lk15Bewilligt) {
-      const lk15MaxMenge = lk15Bewilligt.menge || (lk15Bewilligt.jeWoche * 4.33);
-      const lk14Menge = lk14Pos.menge;
-      const lk15Menge = lk15Pos ? lk15Pos.menge : 0;
-      const summeMengen = lk14Menge + lk15Menge;
-
-      if (summeMengen <= lk15MaxMenge) {
-        console.log(`✓ Sonderregel LK14→LK15: ${lk14Menge} + ${lk15Menge} = ${summeMengen} ≤ ${lk15MaxMenge}`);
-
-        if (lk15Pos) {
-          const lk15Index = result.indexOf(lk15Pos);
-          result[lk15Index] = {
-            ...lk15Pos,
-            menge: summeMengen,
-            gesamt: summeMengen * lk15Pos.preis,
-            bewilligt: true
-          };
-        } else {
-          const lk15Data = LK_PREISE['LK15'];
-          result.push({
-            lkCode: 'LK15',
-            bezeichnung: lk15Data.bezeichnung,
-            menge: lk14Menge,
-            preis: lk15Data.preis,
-            gesamt: lk14Menge * lk15Data.preis,
-            bewilligt: true,
-            istAUB: false
-          });
-        }
-
-        const lk14Index = result.indexOf(lk14Pos);
-        result[lk14Index] = {
-          ...lk14Pos,
-          menge: 0,
-          gesamt: 0,
-          bewilligt: false
-        };
-      } else {
-        console.log(`✗ Sonderregel LK14→LK15 nicht anwendbar: ${summeMengen} > ${lk15MaxMenge}`);
-        const lk14Index = result.indexOf(lk14Pos);
-        result[lk14Index] = {
-          ...lk14Pos,
-          menge: 0,
-          gesamt: 0,
-          bewilligt: false
-        };
-      }
-    }
-
-    // ============================================
-    // SONDERREGEL 2: LK04 ↔ LK02
-    // Große Körperpflege ↔ Kleine Körperpflege
-    // NUR wenn LK04 bewilligt ist!
-    // ============================================
-    const lk02Pos = findPositionSafe('LK02');
-    const lk04Pos = findPositionSafe('LK04');
-    const lk04Bewilligt = findBewilligungSafe('LK04');
-    const lk02Bewilligt = findBewilligungSafe('LK02');
-
-    if (lk04Bewilligt && !lk02Bewilligt) {
-      const lk04MaxMenge = lk04Bewilligt.menge || (lk04Bewilligt.jeWoche * 4.33);
-      const lk02Menge = lk02Pos ? lk02Pos.menge : 0;
-      const lk04Menge = lk04Pos ? lk04Pos.menge : 0;
-      const summeMengen = lk02Menge + lk04Menge;
-
-      if (lk02Menge > 0 || lk04Menge > 0) {
-        console.log(`✓ Sonderregel LK04↔LK02: LK04 bewilligt (${lk04MaxMenge}), LK02+LK04 = ${summeMengen}`);
-
-        if (summeMengen <= lk04MaxMenge) {
-          if (lk02Pos) {
-            const lk02Index = result.indexOf(lk02Pos);
-            result[lk02Index] = { ...lk02Pos, bewilligt: true };
-          }
-          if (lk04Pos) {
-            const lk04Index = result.indexOf(lk04Pos);
-            result[lk04Index] = { ...lk04Pos, bewilligt: true };
-          }
-        } else {
-          if (lk04Pos) {
-            const lk04Index = result.indexOf(lk04Pos);
-            const lk04NeueMenge = Math.min(lk04Menge, lk04MaxMenge);
-            result[lk04Index] = {
-              ...lk04Pos,
-              menge: lk04NeueMenge,
-              gesamt: lk04NeueMenge * lk04Pos.preis,
-              bewilligt: true,
-              gekuerztVon: lk04Menge > lk04NeueMenge ? lk04Menge : undefined
-            };
-          }
-
-          if (lk02Pos) {
-            const verbleibend = lk04MaxMenge - (lk04Pos ? Math.min(lk04Menge, lk04MaxMenge) : 0);
-            const lk02Index = result.indexOf(lk02Pos);
-            const lk02NeueMenge = Math.min(lk02Menge, Math.max(0, verbleibend));
-            result[lk02Index] = {
-              ...lk02Pos,
-              menge: lk02NeueMenge,
-              gesamt: lk02NeueMenge * lk02Pos.preis,
-              bewilligt: lk02NeueMenge > 0,
-              gekuerztVon: lk02Menge > lk02NeueMenge ? lk02Menge : undefined
-            };
-          }
-        }
-      }
-    }
-
-    // ============================================
-    // SONDERREGEL 3: LK03a → LK01
-    // Erweiterte große Körperpflege → Erweiterte kleine
-    // NUR wenn LK03a bewilligt ist!
-    // ============================================
-    const lk01Pos = findPositionSafe('LK01');
-    const lk03aPos = findPositionSafe('LK03A') || findPositionSafe('LK03a');
-    const lk03aBewilligt = findBewilligungSafe('LK03A') || findBewilligungSafe('LK03a');
-    const lk01Bewilligt = findBewilligungSafe('LK01');
-
-    if (lk03aBewilligt && !lk01Bewilligt) {
-      const lk03aMaxMenge = lk03aBewilligt.menge || (lk03aBewilligt.jeWoche * 4.33);
-      const lk01Menge = lk01Pos ? lk01Pos.menge : 0;
-      const lk03aMenge = lk03aPos ? lk03aPos.menge : 0;
-      const summeMengen = lk01Menge + lk03aMenge;
-
-      if (lk01Menge > 0 || lk03aMenge > 0) {
-        console.log(`✓ Sonderregel LK03a→LK01: LK03a bewilligt (${lk03aMaxMenge}), LK01+LK03a = ${summeMengen}`);
-
-        if (summeMengen <= lk03aMaxMenge) {
-          if (lk01Pos) {
-            const lk01Index = result.indexOf(lk01Pos);
-            result[lk01Index] = { ...lk01Pos, bewilligt: true };
-          }
-          if (lk03aPos) {
-            const lk03aIndex = result.indexOf(lk03aPos);
-            result[lk03aIndex] = { ...lk03aPos, bewilligt: true };
-          }
-        } else {
-          if (lk03aPos) {
-            const lk03aIndex = result.indexOf(lk03aPos);
-            const lk03aNeueMenge = Math.min(lk03aMenge, lk03aMaxMenge);
-            result[lk03aIndex] = {
-              ...lk03aPos,
-              menge: lk03aNeueMenge,
-              gesamt: lk03aNeueMenge * lk03aPos.preis,
-              bewilligt: true,
-              gekuerztVon: lk03aMenge > lk03aNeueMenge ? lk03aMenge : undefined
-            };
-          }
-
-          if (lk01Pos) {
-            const verbleibend = lk03aMaxMenge - (lk03aPos ? Math.min(lk03aMenge, lk03aMaxMenge) : 0);
-            const lk01Index = result.indexOf(lk01Pos);
-            const lk01NeueMenge = Math.min(lk01Menge, Math.max(0, verbleibend));
-            result[lk01Index] = {
-              ...lk01Pos,
-              menge: lk01NeueMenge,
-              gesamt: lk01NeueMenge * lk01Pos.preis,
-              bewilligt: lk01NeueMenge > 0,
-              gekuerztVon: lk01Menge > lk01NeueMenge ? lk01Menge : undefined
-            };
-          }
-        }
-      }
-    }
-
-    return result;
-  };
-
-  // Berechne Korrekturrechnung mit allen Regeln
+  // Berechne Korrekturrechnung mit neuer Billing Engine
   const berechneKorrekturrechnung = () => {
     if (!bewilligung || !invoiceData) return null;
 
-    console.log('\n=== STARTE KORREKTURRECHNUNG ===');
+    console.log('\n=== STARTE KORREKTURRECHNUNG (Neue Billing Engine) ===');
 
-    // VALIDATION: Filter invalid bewilligungen
-    const bewilligungData = (bewilligung.leistungen || []).filter((b: any) => {
-      if (!b || !b.lkCode) {
-        console.warn('⚠️ Invalid bewilligung entry found and removed:', b);
-        return false;
-      }
-      return true;
+    // Transform bewilligung data to billing engine format
+    const billingBew: BillingBewilligung = {
+      klient: bewilligung.klient,
+      zeitraum: bewilligung.zeitraum,
+      leistungen: (bewilligung.leistungen || []).map((l: any) => ({
+        code: l.lkCode || l.leistungsart,
+        menge: l.menge || l.jeMonat || l.jeWoche || 0,
+        einheit: l.jeWoche ? 'x/Woche' : 'x/Monat',
+      }))
+    };
+
+    // Transform invoice data to billing engine format
+    const billingInv: BillingInvoice = {
+      zeitraum: { monat: invoiceData.zeitraum?.monat },
+      positionen: (invoiceData.rechnungsPositionen || [])
+        .filter((p: any) => !p.istAUB) // AUBs werden von Engine automatisch berechnet
+        .map((p: any) => ({
+          code: p.lkCode || p.code,
+          menge: Number(p.menge) || 0,
+          einzelpreis: Number(p.preis) || undefined,
+        }))
+    };
+
+    // Get current month or use invoice month
+    const now = new Date();
+    const month = invoiceData.zeitraum?.monat || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    // Determine pflegekassen budget based on Pflegegrad (if available)
+    const pflegegrad = bewilligung.klient?.pflegegrad || 2;
+    const budgetMap: Record<number, number> = {
+      1: 0,      // PG1 - keine Sachleistung
+      2: 761,    // PG2
+      3: 1432,   // PG3
+      4: 1778,   // PG4
+      5: 2200,   // PG5
+    };
+    const pflegekassenBudget = budgetMap[pflegegrad] || 761;
+
+    console.log('Monat:', month);
+    console.log('Pflegegrad:', pflegegrad, '→ Budget:', pflegekassenBudget, '€');
+    console.log('Bewilligungen:', billingBew.leistungen.length);
+    console.log('Rechnungspositionen:', billingInv.positionen.length);
+
+    // Call billing engine
+    const result = computeCorrection(billingBew, billingInv, {
+      month,
+      pflegekassenBudget,
+      zinvSatz: 0.0338,
+      priceTable: PRICES,
+      aubTable: AUB,
     });
 
-    console.log('Bewilligte LKs (validated):', bewilligungData.map((b: any) => `${b.lkCode} (${b.jeWoche || 0}×W, ${b.menge || 0}×M)`));
+    console.log('\n=== DEBUG INFO ===');
+    console.log('5-Wochen-Monat:', result.debug.weeklyFactor === 5);
+    console.log('Limits:', result.debug.limit);
+    console.log('Erbracht:', result.debug.erbracht);
+    console.log('BA-Mengen:', result.debug.baMenge);
+    console.log('Privat-Mengen:', result.debug.privatMenge);
 
-    // Originale Rechnungspositionen
-    const rechnungPositionen = (invoiceData.rechnungsPositionen || []).map((pos: any) => ({
-      lkCode: pos.lkCode,
-      bezeichnung: pos.bezeichnung,
-      menge: Number(pos.menge) || 0,
-      preis: Number(pos.preis) || 0,
-      gesamt: Number(pos.gesamt) || (Number(pos.menge) * Number(pos.preis)) || 0,
-      istAUB: pos.istAUB || false,
-      bewilligt: false
-    }));
+    console.log('\n=== BA-RECHNUNG ===');
+    console.log('Positionen:', result.ba.positionen.length);
+    console.log('Zwischensumme:', result.ba.zwischensumme.toFixed(2), '€');
+    console.log('ZINV:', result.ba.zinv.toFixed(2), '€');
+    console.log('Gesamt:', result.ba.gesamt.toFixed(2), '€');
+    console.log('./. Pflegekasse:', result.ba.pflegekassenAbzug.toFixed(2), '€');
+    console.log('→ Rechnungsbetrag BA:', result.ba.rechnungsbetrag.toFixed(2), '€');
 
-    console.log('Erbrachte Positionen:', rechnungPositionen.filter((p: RechnungsPosition) => !p.istAUB && p.menge > 0).map((p: RechnungsPosition) => `${p.lkCode}: ${p.menge}`));
+    console.log('\n=== PRIVATRECHNUNG ===');
+    console.log('Positionen:', result.privat.positionen.length);
+    console.log('Zwischensumme:', result.privat.zwischensumme.toFixed(2), '€');
+    console.log('ZINV:', result.privat.zinv.toFixed(2), '€');
+    console.log('→ Rechnungsbetrag Privat:', result.privat.rechnungsbetrag.toFixed(2), '€');
 
-    // VALIDATION: Filter out positions without lkCode and non-AUB positions
-    let positionen = rechnungPositionen.filter((p: RechnungsPosition) =>
-      p && p.lkCode && !p.istAUB && p.menge > 0
-    );
-
-    console.log('\n--- VOR Sonderregeln ---');
-    console.log(positionen.map((p: RechnungsPosition) => `${p.lkCode}: ${p.menge} (bewilligt: ${p.bewilligt})`));
-
-    // SCHRITT 1: Sonderregeln anwenden
-    positionen = wendeSonderregelnAn(positionen, bewilligungData);
-
-    console.log('\n--- NACH Sonderregeln ---');
-    console.log(positionen.map((p: RechnungsPosition) => `${p.lkCode}: ${p.menge} (bewilligt: ${p.bewilligt})`));
-
-    // SCHRITT 2: Bewilligungsprüfung und Mengenkürzung
-    positionen = positionen.map((pos: RechnungsPosition) => {
-      // Skip if position has no lkCode
-      if (!pos || !pos.lkCode) {
-        return { ...pos, menge: 0, gesamt: 0, bewilligt: false };
-      }
-
-      const bewilligteLK = bewilligungData.find((b: any) =>
-        b && b.lkCode && b.lkCode.toUpperCase() === pos.lkCode.toUpperCase()
-      );
-
-      if (!bewilligteLK) {
-        // Nicht bewilligt → Menge auf 0
-        return { ...pos, menge: 0, gesamt: 0, bewilligt: false };
-      }
-
-      // Bereits durch Sonderregel bewilligt?
-      if (pos.bewilligt) {
-        return pos;
-      }
-
-      // Normale Bewilligungsprüfung
-      const maxMenge = bewilligteLK.menge || (bewilligteLK.jeWoche * 4.33);
-
-      if (pos.menge <= maxMenge) {
-        return { ...pos, bewilligt: true };
-      } else {
-        // Menge kürzen
-        return {
-          ...pos,
-          menge: maxMenge,
-          gesamt: maxMenge * pos.preis,
-          bewilligt: true,
-          gekuerztVon: pos.menge
-        };
-      }
-    });
-
-    // SCHRITT 3: Nur bewilligte Positionen mit Menge > 0
-    const bewilligtePositionen = positionen.filter((p: RechnungsPosition) => p.bewilligt && p.menge > 0);
-
-    // AUB Positionen hinzufügen
-    const aubPositionen = rechnungPositionen.filter((p: RechnungsPosition) => p.istAUB && p.menge > 0);
-
-    const allePositionen = [...bewilligtePositionen, ...aubPositionen];
-
-    const zwischensumme = allePositionen.reduce((sum: number, pos: RechnungsPosition) => sum + pos.gesamt, 0);
-    const zinv = zwischensumme * 0.0338; // 3.38%
-    const gesamtbetrag = zwischensumme + zinv;
-
-    // Berechne Pflegekasse-Anteil (nur bewilligte, ohne AUB)
-    const pflegekassePositionen = bewilligtePositionen.filter((p: RechnungsPosition) => !p.istAUB);
-    const pflegekasseSumme = pflegekassePositionen.reduce((sum: number, pos: RechnungsPosition) => sum + pos.gesamt, 0);
-
-    const pflegekasse = pflegekasseSumme;
-    const rechnungsbetrag = gesamtbetrag - pflegekasse;
-
-    console.log('\n=== ERGEBNIS ===');
-    console.log('Bewilligte Positionen:', bewilligtePositionen.map((p: RechnungsPosition) => `${p.lkCode}: ${p.menge}`));
-    console.log('Zwischensumme:', zwischensumme.toFixed(2), '€');
-    console.log('ZINV (3.38%):', zinv.toFixed(2), '€');
-    console.log('Gesamtbetrag:', gesamtbetrag.toFixed(2), '€');
-    console.log('./. Pflegekasse:', pflegekasse.toFixed(2), '€');
-    console.log('Rechnungsbetrag BA:', rechnungsbetrag.toFixed(2), '€');
-
+    // Convert back to old format for PDF component compatibility
     return {
-      positionen: allePositionen,
-      zwischensumme,
-      zinv,
-      gesamtbetrag,
-      pflegekasse,
-      rechnungsbetrag
+      positionen: result.ba.positionen.map(p => ({
+        lkCode: p.code,
+        bezeichnung: p.text || p.code,
+        menge: p.menge,
+        preis: p.einzelpreis,
+        gesamt: p.summe,
+        istAUB: p.isAUB,
+        bewilligt: true,
+      })),
+      zwischensumme: result.ba.zwischensumme,
+      zinv: result.ba.zinv,
+      gesamtbetrag: result.ba.gesamt,
+      pflegekasse: result.ba.pflegekassenAbzug,
+      rechnungsbetrag: result.ba.rechnungsbetrag,
+      // Include privat data for potential dual-invoice PDF
+      privat: {
+        positionen: result.privat.positionen.map(p => ({
+          lkCode: p.code,
+          bezeichnung: p.text || p.code,
+          menge: p.menge,
+          preis: p.einzelpreis,
+          gesamt: p.summe,
+          istAUB: p.isAUB,
+        })),
+        zwischensumme: result.privat.zwischensumme,
+        zinv: result.privat.zinv,
+        gesamtbetrag: result.privat.gesamt,
+        rechnungsbetrag: result.privat.rechnungsbetrag,
+      }
     };
   };
 
-  // Auto-load bewilligung when client is selected
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Hero />
