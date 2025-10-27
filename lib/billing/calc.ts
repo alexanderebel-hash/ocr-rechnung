@@ -6,6 +6,8 @@
    - 5‑Wochen‑Regel für wöchentliche Bewilligungen
    - ZINV 3,38 % auf Zwischensumme (LK + AUB), BA‑Abzug (Pflegekasse)
    - Ausgabe: BA‑Rechnung & Privatrechnung (je Positionen + Summen)
+   
+   ✅ FIX: Berücksichtigt nur genehmigte Leistungen (genehmigt === true)
 */
 
 export type LKCode =
@@ -18,6 +20,7 @@ export type BewilligungsPosten = {
   code: LKCode;
   menge: number;          // Anzahl lt. Bewilligung (z. B. 1 bei "1x/Woche")
   einheit: Einheit;       // 'x/Woche' oder 'x/Monat'
+  genehmigt?: boolean;    // ✅ NEU: Ist diese Leistung genehmigt? (aus Excel)
 };
 
 export type Rechnungsposten = {
@@ -146,13 +149,44 @@ export function computeCorrection(
   const budget = nz(opt.pflegekassenBudget ?? 0);
   const { y, m } = parseMonthOrFallback(bew, opt.month);
 
-  // 1) Bewilligung -> Monatslimits je LK
+  // ✅ FIX: Nur genehmigte Leistungen berücksichtigen
+  console.log('\n═══ CALC.TS DEBUG ═══');
+  console.log('Bewilligung Leistungen (gesamt):', bew.leistungen?.length || 0);
+
+  // 1) Bewilligung -> Monatslimits je LK (NUR für genehmigte Leistungen!)
   const limit = new Map<LKCode, number>();
+  let genehmigteCount = 0;
+  let nichtGenehmigteCount = 0;
+  
   for (const b of bew.leistungen || []) {
     if (!b) continue;
+    
     const code = norm(b.code);
+    
+    // ✅ KRITISCHER FIX: Prüfe ob genehmigt
+    // Falls 'genehmigt' Property nicht existiert (alte Daten), nehmen wir an: genehmigt wenn menge > 0
+    const istGenehmigt = b.genehmigt !== undefined ? b.genehmigt === true : (nz(b.menge) > 0);
+    
+    if (!istGenehmigt) {
+      nichtGenehmigteCount++;
+      console.log(`  ❌ ${code}: NICHT GENEHMIGT (menge: ${b.menge}, genehmigt: ${b.genehmigt})`);
+      continue; // ✅ Überspringe nicht genehmigte Leistungen!
+    }
+    
+    genehmigteCount++;
     const lim = toMonthlyApproved(nz(b.menge), b.einheit, y, m);
     limit.set(code, (limit.get(code) ?? 0) + lim);
+    console.log(`  ✅ ${code}: GENEHMIGT (limit: ${lim})`);
+  }
+  
+  console.log(`\n📊 Zusammenfassung:`);
+  console.log(`  Genehmigt: ${genehmigteCount}`);
+  console.log(`  Nicht genehmigt: ${nichtGenehmigteCount}`);
+  console.log(`  Limits gesetzt:`, Object.fromEntries(limit));
+
+  if (genehmigteCount === 0) {
+    console.error('\n🚨 WARNUNG: Keine einzige Leistung wurde als genehmigt erkannt!');
+    console.error('   → Zwischensumme wird 0,00 EUR sein!');
   }
 
   // 2) Erbrachte Mengen je LK (aus OCR-Rechnung)
@@ -297,6 +331,12 @@ export function computeCorrection(
   const baAbzug = Math.min(baGes, budget);
   const baBetrag = EUR(baGes - baAbzug);
 
+  console.log(`\n💰 BERECHNETE SUMMEN:`);
+  console.log(`  BA Zwischensumme: ${baZw.toFixed(2)} EUR`);
+  console.log(`  BA ZINV: ${baZinv.toFixed(2)} EUR`);
+  console.log(`  BA Gesamt: ${baGes.toFixed(2)} EUR`);
+  console.log(`  BA Rechnungsbetrag: ${baBetrag.toFixed(2)} EUR`);
+
   // Summen Privat (inkl. anteiliger ZINV)
   const prZw = EUR(privatLines.reduce((s, x) => s + x.summe, 0));
   const prZinv = EUR(prZw * zinv);
@@ -306,6 +346,8 @@ export function computeCorrection(
   // oder wenn Budget größer als BA‑Gesamt war -> Differenz bleibt ohne weitere Umbuchung (BA wird 0)
   const privatEndbetrag = EUR(prGes + Math.max(0, budget - baGes));
 
+  console.log('═══ CALC.TS DEBUG ENDE ═══\n');
+
   return {
     debug: {
       month: `${y}-${String(m).padStart(2, '0')}`,
@@ -314,6 +356,8 @@ export function computeCorrection(
       erbracht: Object.fromEntries(erbracht),
       baMenge: Object.fromEntries(baMenge),
       privatMenge: Object.fromEntries(privatMenge),
+      genehmigteLeistungen: genehmigteCount,  // ✅ NEU
+      nichtGenehmigteLeistungen: nichtGenehmigteCount,  // ✅ NEU
     },
     ba: {
       positionen: baLines,
