@@ -55,6 +55,19 @@ export default function Home() {
   const berechneKorrekturrechnung = () => {
     if (!bewilligung || !invoiceData) return null;
 
+    const rechnungsPositionen = Array.isArray(invoiceData.rechnungsPositionen)
+      ? invoiceData.rechnungsPositionen
+      : [];
+
+    if (
+      invoiceData.rechnungsPositionen !== undefined &&
+      !Array.isArray(invoiceData.rechnungsPositionen)
+    ) {
+      console.warn(
+        '[Home] Ungültige Struktur für invoiceData.rechnungsPositionen; fallback auf leeres Array.',
+      );
+    }
+
     console.log('\n=== STARTE KORREKTURRECHNUNG (Neue Billing Engine) ===');
 
     // Transform bewilligung data to billing engine format
@@ -71,7 +84,7 @@ export default function Home() {
     // Transform invoice data to billing engine format
     const billingInv: BillingInvoice = {
       zeitraum: { monat: invoiceData.zeitraum?.monat },
-      positionen: (invoiceData.rechnungsPositionen || [])
+      positionen: rechnungsPositionen
         .filter((p: any) => !p.istAUB) // AUBs werden von Engine automatisch berechnet
         .map((p: any) => ({
           code: p.lkCode || p.code,

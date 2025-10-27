@@ -39,7 +39,8 @@ interface BewilligungData {
 
 interface RechnungData {
   rechnungsPositionen: RechnungsPosition[];
-  zinv?: string | null;
+  zwischensumme: number;
+  zinv?: number;
   gesamtbetrag: number;
   rechnungsnummer?: string;
 }
@@ -48,6 +49,93 @@ interface PDFUploadProps {
   type: 'bewilligung' | 'rechnung';
   onDataExtracted: (data: BewilligungData | RechnungData) => void;
 }
+
+type OCRPayload = BewilligungData | RechnungData | Record<string, unknown> | null | undefined;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const toNumber = (value: unknown, fallback = 0): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.replace(',', '.');
+    const parsed = Number.parseFloat(normalized);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  return fallback;
+};
+
+const sanitizeRechnungsPosition = (
+  raw: unknown,
+  index: number,
+): RechnungsPosition | null => {
+  if (!isRecord(raw)) {
+    return null;
+  }
+
+  const lkCodeRaw = raw.lkCode ?? raw.code;
+  const lkCode =
+    typeof lkCodeRaw === 'string' && lkCodeRaw.trim().length > 0
+      ? lkCodeRaw
+      : `UNBEKANNT-${index + 1}`;
+
+  const bezeichnung =
+    typeof raw.bezeichnung === 'string' ? raw.bezeichnung : '';
+
+  const menge = toNumber(raw.menge);
+  const preis = toNumber(raw.preis);
+  const gesamt =
+    'gesamt' in raw ? toNumber(raw.gesamt) : Number.isFinite(menge * preis) ? menge * preis : 0;
+
+  const bewilligtValue = raw.bewilligt;
+  const bewilligt =
+    typeof bewilligtValue === 'boolean'
+      ? bewilligtValue
+      : Boolean(bewilligtValue);
+
+  const istAUB = raw.istAUB === true;
+
+  return {
+    lkCode,
+    bezeichnung,
+    menge,
+    preis,
+    gesamt,
+    bewilligt,
+    ...(istAUB ? { istAUB } : {}),
+  };
+};
+
+const sanitizeRechnungData = (payload: OCRPayload): RechnungData => {
+  const base: Record<string, unknown> = isRecord(payload) ? payload : {};
+
+  const rawPositionen = Array.isArray(base.rechnungsPositionen)
+    ? base.rechnungsPositionen
+    : [];
+
+  const rechnungsPositionen = rawPositionen
+    .map((pos, index) => sanitizeRechnungsPosition(pos, index))
+    .filter((pos): pos is RechnungsPosition => pos !== null);
+
+  const zwischensumme = toNumber(base.zwischensumme);
+  const gesamtbetrag = toNumber(base.gesamtbetrag);
+  const zinv =
+    base.zinv === null || base.zinv === undefined
+      ? undefined
+      : toNumber(base.zinv, 0);
+
+  return {
+    ...base,
+    rechnungsPositionen,
+    zwischensumme,
+    gesamtbetrag,
+    ...(zinv === undefined ? {} : { zinv }),
+  } as RechnungData;
+};
 
 export default function PDFUpload({ type, onDataExtracted }: PDFUploadProps) {
   const [file, setFile] = useState<File | null>(null);
@@ -78,7 +166,23 @@ export default function PDFUpload({ type, onDataExtracted }: PDFUploadProps) {
     try {
       const result = await runOcr(fileToProcess, type);
       if (result?.data) {
-        onDataExtracted(result.data);
+        if (type === 'rechnung') {
+          const sanitizedInvoice = sanitizeRechnungData(result.data);
+          onDataExtracted(sanitizedInvoice);
+
+          const originalPositions = (result.data as any)?.rechnungsPositionen;
+          if (
+            !Array.isArray(originalPositions) ||
+            (originalPositions?.length ?? 0) !==
+              sanitizedInvoice.rechnungsPositionen.length
+          ) {
+            console.warn(
+              '[PDFUpload] Rechnungspositionen wurden aus Sicherheitsgründen normalisiert.',
+            );
+          }
+        } else {
+          onDataExtracted(result.data as BewilligungData);
+        }
         setSuccess(true);
       } else {
         throw new Error('Keine Daten extrahiert');

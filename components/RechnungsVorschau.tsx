@@ -1,11 +1,11 @@
 'use client';
 
 interface RechnungsPosition {
-  lkCode: string;
-  bezeichnung: string;
-  menge: number;
-  preis: number;
-  gesamt: number;
+  lkCode?: string;
+  bezeichnung?: string;
+  menge?: number | string | null;
+  preis?: number | string | null;
+  gesamt?: number | string | null;
 }
 
 interface RechnungsDaten {
@@ -20,16 +20,30 @@ interface RechnungsDaten {
     name?: string;
     adresse?: string;
   };
-  rechnungsPositionen: RechnungsPosition[];
-  zwischensumme: number;
-  zinv?: number;
-  gesamtbetrag: number;
+  rechnungsPositionen?: RechnungsPosition[] | null;
+  zwischensumme?: number | string | null;
+  zinv?: number | string | null;
+  gesamtbetrag?: number | string | null;
 }
 
 interface RechnungsVorschauProps {
   rechnungsDaten: RechnungsDaten | null;
   isLoading?: boolean;
 }
+
+const toNumber = (value: unknown, fallback = 0): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.replace(',', '.');
+    const parsed = Number.parseFloat(normalized);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  return fallback;
+};
 
 export default function RechnungsVorschau({ rechnungsDaten, isLoading }: RechnungsVorschauProps) {
   if (isLoading) {
@@ -59,6 +73,49 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
       </div>
     );
   }
+
+  const positionenRaw = Array.isArray(rechnungsDaten.rechnungsPositionen)
+    ? rechnungsDaten.rechnungsPositionen
+    : [];
+
+  const positionen = positionenRaw.map((pos, index) => {
+    const lkCodeRaw =
+      typeof pos?.lkCode === 'string' && pos.lkCode.trim().length > 0
+        ? pos.lkCode
+        : undefined;
+
+    const bezeichnungRaw =
+      typeof pos?.bezeichnung === 'string' && pos.bezeichnung.trim().length > 0
+        ? pos.bezeichnung
+        : undefined;
+
+    const menge = toNumber(pos?.menge);
+    const preis = toNumber(pos?.preis);
+    const gesamt = toNumber(
+      pos?.gesamt,
+      Number.isFinite(menge * preis) ? menge * preis : 0,
+    );
+
+    const lkCode = lkCodeRaw ?? `Pos-${index + 1}`;
+    const bezeichnung = bezeichnungRaw ?? 'Unbekannte Leistung';
+
+    return {
+      key: `${lkCode}-${index}`,
+      lkCode,
+      bezeichnung,
+      menge,
+      preis,
+      gesamt,
+    };
+  });
+
+  const hatPositionen = positionen.length > 0;
+  const zwischensumme = toNumber(rechnungsDaten.zwischensumme);
+  const gesamtbetrag = toNumber(rechnungsDaten.gesamtbetrag);
+  const zinvValue =
+    rechnungsDaten.zinv === null || rechnungsDaten.zinv === undefined
+      ? null
+      : toNumber(rechnungsDaten.zinv);
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
@@ -115,11 +172,16 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
       {/* Rechnungspositionen */}
       <div className="bg-gray-50 rounded-lg p-4 mb-4">
         <h4 className="font-semibold text-gray-900 mb-3">
-          Rechnungspositionen ({rechnungsDaten.rechnungsPositionen.length})
+          Rechnungspositionen ({positionen.length})
         </h4>
 
-        {rechnungsDaten.rechnungsPositionen.length === 0 ? (
-          <p className="text-gray-500 text-sm">Keine Positionen vorhanden</p>
+        {!hatPositionen ? (
+          <div className="text-gray-500 text-sm space-y-1">
+            <p>Keine Rechnungspositionen vorhanden oder nicht erkannt.</p>
+            <p className="text-xs">
+              Bitte prüfen Sie die OCR-Erkennung oder ergänzen Sie die Positionen manuell.
+            </p>
+          </div>
         ) : (
           <div className="space-y-2">
             {/* Header */}
@@ -132,9 +194,9 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
             </div>
 
             {/* Positionen */}
-            {rechnungsDaten.rechnungsPositionen.map((pos, index) => (
+            {positionen.map((pos) => (
               <div
-                key={index}
+                key={pos.key}
                 className="grid grid-cols-12 gap-2 py-2 border-b border-gray-200 text-sm"
               >
                 <div className="col-span-2 font-semibold text-gray-900">
@@ -164,15 +226,15 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
           <div className="flex justify-between items-center">
             <span className="text-gray-700">Zwischensumme:</span>
             <span className="font-semibold text-gray-900">
-              {rechnungsDaten.zwischensumme.toFixed(2)} €
+              {zwischensumme.toFixed(2)} €
             </span>
           </div>
 
-          {rechnungsDaten.zinv !== undefined && rechnungsDaten.zinv > 0 && (
+          {zinvValue !== null && zinvValue > 0 && (
             <div className="flex justify-between items-center">
               <span className="text-gray-700">ZINV (3,38%):</span>
               <span className="font-semibold text-gray-900">
-                {rechnungsDaten.zinv.toFixed(2)} €
+                {zinvValue.toFixed(2)} €
               </span>
             </div>
           )}
@@ -180,7 +242,7 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
           <div className="flex justify-between items-center pt-2 border-t-2 border-blue-300">
             <span className="text-lg font-bold text-gray-900">Gesamtbetrag:</span>
             <span className="text-xl font-bold text-blue-600">
-              {rechnungsDaten.gesamtbetrag.toFixed(2)} €
+              {gesamtbetrag.toFixed(2)} €
             </span>
           </div>
         </div>
