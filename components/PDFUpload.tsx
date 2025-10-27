@@ -61,7 +61,7 @@ const toNumber = (value: unknown, fallback = 0): number => {
   }
 
   if (typeof value === 'string') {
-    const normalized = value.replace(',', '.');
+    const normalized = value.replace(/\./g, '').replace(',', '.');
     const parsed = Number.parseFloat(normalized);
     return Number.isFinite(parsed) ? parsed : fallback;
   }
@@ -69,27 +69,58 @@ const toNumber = (value: unknown, fallback = 0): number => {
   return fallback;
 };
 
+const extractLKCode = (text: string): string | null => {
+  // Suche nach LK-Codes wie: LK02, LK03a, LK03b, LK11b, LK20.2, LK20_HH
+  const match = text.match(/LK\d+[a-z]?(?:[._]\w+)?/i);
+  if (match) {
+    return match[0].toUpperCase().replace('.', '_');
+  }
+  return null;
+};
+
 const sanitizeRechnungsPosition = (
   raw: unknown,
   index: number,
 ): RechnungsPosition | null => {
   if (!isRecord(raw)) {
+    console.warn(`Position ${index} ist kein Object:`, raw);
     return null;
   }
 
-  const lkCodeRaw = raw.lkCode ?? raw.code;
-  const lkCode =
-    typeof lkCodeRaw === 'string' && lkCodeRaw.trim().length > 0
-      ? lkCodeRaw
-      : `UNBEKANNT-${index + 1}`;
+  // Versuche LK-Code zu finden
+  let lkCode: string | null = null;
+  
+  // 1. Prüfe ob direktes lkCode Feld existiert
+  const lkCodeRaw = raw.lkCode ?? raw.code ?? raw.lk_code ?? raw.abk;
+  if (typeof lkCodeRaw === 'string' && lkCodeRaw.trim().length > 0) {
+    lkCode = lkCodeRaw.trim().toUpperCase();
+  }
+  
+  // 2. Falls nicht, extrahiere aus Beschreibung
+  if (!lkCode) {
+    const beschreibungRaw = raw.beschreibung ?? raw.leistung ?? raw.bezeichnung ?? raw.description;
+    if (typeof beschreibungRaw === 'string') {
+      lkCode = extractLKCode(beschreibungRaw);
+    }
+  }
+  
+  // 3. Fallback: UNBEKANNT
+  if (!lkCode) {
+    lkCode = `UNBEKANNT-${index + 1}`;
+    console.warn(`Keine LK-Code gefunden für Position ${index}:`, raw);
+  }
 
-  const bezeichnung =
-    typeof raw.bezeichnung === 'string' ? raw.bezeichnung : '';
+  const bezeichnung = typeof raw.bezeichnung === 'string' 
+    ? raw.bezeichnung 
+    : typeof raw.leistung === 'string'
+    ? raw.leistung
+    : typeof raw.description === 'string'
+    ? raw.description
+    : '';
 
-  const menge = toNumber(raw.menge);
-  const preis = toNumber(raw.preis);
-  const gesamt =
-    'gesamt' in raw ? toNumber(raw.gesamt) : Number.isFinite(menge * preis) ? menge * preis : 0;
+  const menge = toNumber(raw.menge ?? raw.anzahl ?? raw.quantity);
+  const preis = toNumber(raw.preis ?? raw.einzelpreis ?? raw.price);
+  const gesamt = toNumber(raw.gesamt ?? raw.gesamtpreis ?? raw.total, menge * preis);
 
   const bewilligtValue = raw.bewilligt;
   const bewilligt =
@@ -97,7 +128,12 @@ const sanitizeRechnungsPosition = (
       ? bewilligtValue
       : Boolean(bewilligtValue);
 
-  const istAUB = raw.istAUB === true;
+  const istAUB = 
+    raw.istAUB === true || 
+    lkCode.includes('AUB') ||
+    bezeichnung.toLowerCase().includes('ausbildungsumlage');
+
+  console.log(`Position ${index}: ${lkCode} | Menge: ${menge} | Preis: ${preis} | Gesamt: ${gesamt}`);
 
   return {
     lkCode,
@@ -132,6 +168,7 @@ const sanitizeRechnungData = (payload: OCRPayload): RechnungData => {
   console.log('📊 Raw Positionen gefunden:', rawPositionen.length);
   if (rawPositionen.length > 0) {
     console.log('📌 Erste Position:', JSON.stringify(rawPositionen[0], null, 2));
+    console.log('📌 Zweite Position:', JSON.stringify(rawPositionen[1], null, 2));
   }
 
   const rechnungsPositionen = rawPositionen
@@ -139,10 +176,11 @@ const sanitizeRechnungData = (payload: OCRPayload): RechnungData => {
     .filter((pos): pos is RechnungsPosition => pos !== null);
 
   console.log('✅ Sanitized Positionen:', rechnungsPositionen.length);
+  console.log('📋 LK-Codes gefunden:', rechnungsPositionen.map(p => p.lkCode).join(', '));
   console.log('═══ SANITIZE DEBUG END ═══\n');
 
-  const zwischensumme = toNumber(base.zwischensumme);
-  const gesamtbetrag = toNumber(base.gesamtbetrag);
+  const zwischensumme = toNumber(base.zwischensumme ?? base.summe_netto);
+  const gesamtbetrag = toNumber(base.gesamtbetrag ?? base.summe_brutto);
   const zinv =
     base.zinv === null || base.zinv === undefined
       ? undefined
