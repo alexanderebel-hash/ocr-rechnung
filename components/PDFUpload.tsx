@@ -111,15 +111,35 @@ const sanitizeRechnungsPosition = (
 };
 
 const sanitizeRechnungData = (payload: OCRPayload): RechnungData => {
+  console.log('\n═══ SANITIZE DEBUG START ═══');
+  console.log('📦 Raw Payload Type:', typeof payload);
+  
   const base: Record<string, unknown> = isRecord(payload) ? payload : {};
+  
+  console.log('🔑 Keys in base:', Object.keys(base));
+  console.log('📋 base.rechnungsPositionen:', base.rechnungsPositionen);
+  console.log('📋 Is Array?', Array.isArray(base.rechnungsPositionen));
 
-  const rawPositionen = Array.isArray(base.rechnungsPositionen)
-    ? base.rechnungsPositionen
-    : [];
+  // ✅ VERSUCHE VERSCHIEDENE SCHLÜSSEL FÜR POSITIONEN
+  const rawPositionen = 
+    Array.isArray(base.rechnungsPositionen) ? base.rechnungsPositionen :
+    Array.isArray(base.positionen) ? base.positionen :
+    Array.isArray(base.rechnungs_positionen) ? base.rechnungs_positionen :
+    Array.isArray(base.items) ? base.items :
+    Array.isArray(base.leistungen) ? base.leistungen :
+    [];
+
+  console.log('📊 Raw Positionen gefunden:', rawPositionen.length);
+  if (rawPositionen.length > 0) {
+    console.log('📌 Erste Position:', JSON.stringify(rawPositionen[0], null, 2));
+  }
 
   const rechnungsPositionen = rawPositionen
     .map((pos, index) => sanitizeRechnungsPosition(pos, index))
     .filter((pos): pos is RechnungsPosition => pos !== null);
+
+  console.log('✅ Sanitized Positionen:', rechnungsPositionen.length);
+  console.log('═══ SANITIZE DEBUG END ═══\n');
 
   const zwischensumme = toNumber(base.zwischensumme);
   const gesamtbetrag = toNumber(base.gesamtbetrag);
@@ -165,9 +185,29 @@ export default function PDFUpload({ type, onDataExtracted }: PDFUploadProps) {
 
     try {
       const result = await runOcr(fileToProcess, type);
+      
+      // ✅ UMFANGREICHES DEBUG-LOGGING
+      console.log('\n🔍 ═══ OCR RESULT DEBUG ═══');
+      console.log('📄 File:', fileToProcess.name);
+      console.log('🎯 Type:', type);
+      console.log('📦 Result exists?', !!result);
+      console.log('📦 Result.data exists?', !!result?.data);
+      
+      if (result?.data) {
+        console.log('📊 RAW OCR DATA:');
+        console.log(JSON.stringify(result.data, null, 2));
+      }
+      console.log('═══ OCR RESULT DEBUG END ═══\n');
+
       if (result?.data) {
         if (type === 'rechnung') {
           const sanitizedInvoice = sanitizeRechnungData(result.data);
+          
+          console.log('\n✅ FINAL SANITIZED DATA:');
+          console.log('Positionen:', sanitizedInvoice.rechnungsPositionen.length);
+          console.log('Zwischensumme:', sanitizedInvoice.zwischensumme);
+          console.log('Gesamtbetrag:', sanitizedInvoice.gesamtbetrag);
+          
           onDataExtracted(sanitizedInvoice);
 
           const originalPositions = (result.data as any)?.rechnungsPositionen;
