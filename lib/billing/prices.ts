@@ -1,39 +1,71 @@
 /* lib/billing/prices.ts */
 import type { PriceTable, AUBTable } from './calc';
 
+/**
+ * Berliner Pflegesystem 2025 - Offizielle Preise
+ * Quelle: Vorlage_Korrekturblatt_.xlsx
+ */
+
 export const PRICES: PriceTable = {
-  LK01: 13.31,      // Erweiterte Kleine Körperpflege
-  LK02: 9.18,       // Kleine Körperpflege
-  LK03a: 19.97,     // Erweiterte Große Körperpflege
-  LK04: 16.64,      // Große Körperpflege
-  LK07a: 6.77,      // Hilfe beim Aufstehen/Zubettgehen
-  LK11b: 18.80,     // Hilfe bei der Nahrungsaufnahme (besonders aufwändig)
-  LK12: 9.41,       // Hilfe bei der Nahrungsaufnahme
-  LK13: 4.45,       // Hilfe beim Verlassen/Wiederaufsuchen der Wohnung
-  LK14: 22.29,      // Warme Mahlzeit (wird zu LK15)
-  LK15: 4.80,       // Kleine Mahlzeit
-  LK17a: 20.85,     // Hauswirtschaftliche Versorgung (aufwändig)
-  LK17b: 26.47,     // Hauswirtschaftliche Versorgung (besonders aufwändig)
-  'LK20_HH': 7.87,  // Hausbesuch (hauswirtschaftlich)
-  'LK20.1': 7.87,   // Hausbesuch (pflegerisch)
-  'LK20.2': 7.87,   // Hausbesuch (pflegerisch)
+  LK01: 25.51,      // Erweiterte kleine Körperpflege
+  LK02: 17.01,      // Kleine Körperpflege
+  LK03a: 38.30,     // Erweiterte große Körperpflege
+  LK03b: 51.02,     // Erweiterte große Körperpflege m. Baden
+  LK04: 34.01,      // Große Körperpflege
+  LK05: 8.50,       // Lagern/Betten
+  LK06: 21.30,      // Hilfe bei der Nahrungsaufnahme
+  LK07a: 6.77,      // Darm- und Blasenentleerung
+  LK07b: 17.01,     // Darm- und Blasenentleerung erweitert
+  LK08a: 5.94,      // Hilfestelll. beim Verl.o.Wiederaufs. d. Wohng.
+  LK08b: 5.94,      // Hilfestellung beim Wiederaufsuchen der Wohnung
+  LK09: 51.02,      // Begleitung ausser Haus
+  LK11a: 7.43,      // Kleine Reinigung der Wohnung
+  LK11b: 22.29,     // Große Reinigung der Wohnung
+  LK12: 39.62,      // Wechseln u. Waschen der Kleidung
+  LK13: 19.81,      // Einkaufen
+  LK14: 22.29,      // Zubereitung warme Mahlzeit
+  LK15: 7.43,       // Zubereitung kleine Mahlzeit
+  LK17a: 5.37,      // Einsatzpauschale
+  LK17b: 10.73,     // Einsatzpauschale WE
+  LK20: 8.26,       // Häusliche Betreuung §124 SGB XI
+  'LK20_HH': 8.26,  // Häusliche Betreuung §124 SGB XI (Haushaltsbuch)
+  'LK20.1': 8.26,   // Häusliche Betreuung §124 SGB XI
+  'LK20.2': 8.26,   // Häusliche Betreuung §124 SGB XI (Haushaltsbuch)
 };
 
+/**
+ * Ausbildungsumlage (AUB) pro LK
+ * Wird 1:1 je Stück berechnet
+ */
 export const AUB: AUBTable = {
-  // AUB ist 1:1 je Stück
-  LK01: 0.15,
-  LK02: 0.15,
-  LK03a: 0.15,
-  LK04: 0.15,
-  LK07a: 0.15,
-  LK11b: 0.15,
-  LK12: 0.15,
-  LK13: 0.15,
-  LK14: 0,          // nicht direkt abrechnen (wird zu LK15)
-  LK15: 0.17,       // wichtig für SR1
-  LK17a: 0.15,
-  LK17b: 0.15,
-  'LK20_HH': 0.15,
-  'LK20.1': 0.15,
-  'LK20.2': 0.15,
+  LK01: 0.59,
+  LK02: 0.39,
+  LK03a: 0.88,
+  LK03b: 1.17,
+  LK04: 0.78,
+  LK05: 0.20,
+  LK06: 0.49,
+  LK07a: 0.16,
+  LK07b: 0.39,
+  LK08a: 0.14,
+  LK08b: 0.14,
+  LK09: 1.17,
+  LK11a: 0.17,
+  LK11b: 0.51,
+  LK12: 0.91,
+  LK13: 0.46,
+  LK14: 0.51,
+  LK15: 0.17,
+  LK17a: 0.12,
+  LK17b: 0.25,
+  LK20: 0.19,
+  'LK20_HH': 0.19,
+  'LK20.1': 0.19,
+  'LK20.2': 0.19,
 };
+
+/**
+ * ZINV (Zusätzliche Investitionskosten)
+ * 3,38% auf Zwischensumme (LK + AUB)
+ */
+export const ZINV_RATE = 0.0338;
