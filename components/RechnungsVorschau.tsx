@@ -1,84 +1,82 @@
 'use client';
 
-interface RechnungsPosition {
-  lkCode?: string;
-  bezeichnung?: string;
-  menge?: number | string | null;
-  preis?: number | string | null;
-  gesamt?: number | string | null;
-}
+import React from 'react';
 
-interface RechnungsDaten {
-  rechnungsNummer?: string;
-  rechnungsDatum?: string;
-  zeitraum?: {
-    monat?: string;
-    von?: string;
-    bis?: string;
-  };
-  klient?: {
-    name?: string;
-    adresse?: string;
-  };
-  rechnungsPositionen?: RechnungsPosition[] | null;
-  zwischensumme?: number | string | null;
-  zinv?: number | string | null;
-  gesamtbetrag?: number | string | null;
-}
-
-interface RechnungsVorschauProps {
-  rechnungsDaten: RechnungsDaten | null;
-  isLoading?: boolean;
-}
-
-const toNumber = (value: unknown, fallback = 0): number => {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value === 'string') {
-    const normalized = value.replace(',', '.');
-    const parsed = Number.parseFloat(normalized);
-    return Number.isFinite(parsed) ? parsed : fallback;
-  }
-
-  return fallback;
+// LK-Preise für Bezeichnungen (Berliner Pflegesystem 2025)
+const LK_PREISE: Record<string, { bezeichnung: string; preis: number }> = {
+  'LK01': { bezeichnung: 'Erweiterte kleine Körperpflege', preis: 25.51 },
+  'LK02': { bezeichnung: 'Kleine Körperpflege', preis: 17.01 },
+  'LK03A': { bezeichnung: 'Erweiterte große Körperpflege', preis: 38.30 },
+  'LK03a': { bezeichnung: 'Erweiterte große Körperpflege', preis: 38.30 },
+  'LK03B': { bezeichnung: 'Erweiterte große Körperpflege m. Baden', preis: 51.02 },
+  'LK03b': { bezeichnung: 'Erweiterte große Körperpflege m. Baden', preis: 51.02 },
+  'LK04': { bezeichnung: 'Große Körperpflege', preis: 34.01 },
+  'LK05': { bezeichnung: 'Lagern/Betten', preis: 8.50 },
+  'LK06': { bezeichnung: 'Hilfe bei der Nahrungsaufnahme', preis: 21.30 },
+  'LK07A': { bezeichnung: 'Darm- und Blasenentleerung', preis: 6.77 },
+  'LK07a': { bezeichnung: 'Darm- und Blasenentleerung', preis: 6.77 },
+  'LK07B': { bezeichnung: 'Darm- und Blasenentleerung erweitert', preis: 17.01 },
+  'LK07b': { bezeichnung: 'Darm- und Blasenentleerung erweitert', preis: 17.01 },
+  'LK08A': { bezeichnung: 'Hilfestelll. beim Verl.o.Wiederaufs. d. Wohng.', preis: 5.94 },
+  'LK08a': { bezeichnung: 'Hilfestelll. beim Verl.o.Wiederaufs. d. Wohng.', preis: 5.94 },
+  'LK08B': { bezeichnung: 'Hilfestellung beim Wiederaufsuchen der Wohnung', preis: 5.94 },
+  'LK08b': { bezeichnung: 'Hilfestellung beim Wiederaufsuchen der Wohnung', preis: 5.94 },
+  'LK09': { bezeichnung: 'Begleitung ausser Haus', preis: 51.02 },
+  'LK11A': { bezeichnung: 'Kleine Reinigung der Wohnung', preis: 7.43 },
+  'LK11a': { bezeichnung: 'Kleine Reinigung der Wohnung', preis: 7.43 },
+  'LK11B': { bezeichnung: 'Große Reinigung der Wohnung', preis: 22.29 },
+  'LK11b': { bezeichnung: 'Große Reinigung der Wohnung', preis: 22.29 },
+  'LK12': { bezeichnung: 'Wechseln u. Waschen der Kleidung', preis: 39.62 },
+  'LK13': { bezeichnung: 'Einkaufen', preis: 19.81 },
+  'LK14': { bezeichnung: 'Zubereitung warme Mahlzeit', preis: 22.29 },
+  'LK15': { bezeichnung: 'Zubereitung kleine Mahlzeit', preis: 7.43 },
+  'LK17A': { bezeichnung: 'Einsatzpauschale', preis: 5.37 },
+  'LK17a': { bezeichnung: 'Einsatzpauschale', preis: 5.37 },
+  'LK17B': { bezeichnung: 'Einsatzpauschale WE', preis: 10.73 },
+  'LK17b': { bezeichnung: 'Einsatzpauschale WE', preis: 10.73 },
+  'LK20': { bezeichnung: 'Häusliche Betreuung §124 SGB XI', preis: 8.26 },
+  'LK20_HH': { bezeichnung: 'Häusliche Betreuung §124 SGB XI (Haushaltsbuch)', preis: 8.26 },
+  'LK20.1': { bezeichnung: 'Häusliche Betreuung §124 SGB XI', preis: 8.26 },
+  'LK20.2': { bezeichnung: 'Häusliche Betreuung §124 SGB XI (Haushaltsbuch)', preis: 8.26 },
 };
 
-export default function RechnungsVorschau({ rechnungsDaten, isLoading }: RechnungsVorschauProps) {
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Originalrechnung Vorschau
-        </h2>
-        <div className="text-center py-8 text-gray-500">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2">Verarbeite Rechnung...</p>
-        </div>
-      </div>
-    );
-  }
+interface RechnungsVorschauProps {
+  rechnungsDaten: {
+    rechnungsNummer?: string | null;
+    rechnungsDatum?: string | null;
+    zeitraum?: {
+      monat?: string | null;
+      von?: string | null;
+      bis?: string | null;
+    } | null;
+    klient?: {
+      name?: string | null;
+      adresse?: string | null;
+    } | null;
+    positionen?: Array<{
+      lkCode?: string | null;
+      bezeichnung?: string | null;
+      menge?: number | string | null;
+      preis?: number | string | null;
+      gesamt?: number | string | null;
+    }> | null;
+    zwischensumme?: number | string | null;
+    gesamtbetrag?: number | string | null;
+    zinv?: number | string | null;
+  };
+}
 
-  if (!rechnungsDaten) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Originalrechnung Vorschau
-        </h2>
-        <div className="text-center py-8 text-gray-500">
-          <p>Keine Rechnungsdaten geladen</p>
-          <p className="text-sm mt-2">Bitte laden Sie eine PDF-Rechnung hoch</p>
-        </div>
-      </div>
-    );
-  }
+function toNumber(
+  value: number | string | null | undefined,
+  fallback: number = 0,
+): number {
+  if (value === null || value === undefined || value === '') return fallback;
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  return Number.isFinite(num) ? num : fallback;
+}
 
-  const positionenRaw = Array.isArray(rechnungsDaten.rechnungsPositionen)
-    ? rechnungsDaten.rechnungsPositionen
-    : [];
-
-  const positionen = positionenRaw.map((pos, index) => {
+export default function RechnungsVorschau({ rechnungsDaten }: RechnungsVorschauProps) {
+  const positionen = (rechnungsDaten?.positionen ?? []).map((pos, index) => {
     const lkCodeRaw =
       typeof pos?.lkCode === 'string' && pos.lkCode.trim().length > 0
         ? pos.lkCode
@@ -97,7 +95,9 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
     );
 
     const lkCode = lkCodeRaw ?? `Pos-${index + 1}`;
-    const bezeichnung = bezeichnungRaw ?? 'Unbekannte Leistung';
+    
+    // ✅ FIX: Hole Bezeichnung aus LK_PREISE wenn OCR keine liefert
+    const bezeichnung = bezeichnungRaw ?? LK_PREISE[lkCode]?.bezeichnung ?? 'Unbekannte Leistung';
 
     return {
       key: `${lkCode}-${index}`,
