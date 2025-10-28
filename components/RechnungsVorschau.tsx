@@ -64,6 +64,7 @@ interface RechnungsVorschauProps {
     gesamtbetrag?: number | string | null;
     zinv?: number | string | null;
   };
+  isLoading?: boolean; // ✅ HINZUGEFÜGT
 }
 
 function toNumber(
@@ -75,7 +76,7 @@ function toNumber(
   return Number.isFinite(num) ? num : fallback;
 }
 
-export default function RechnungsVorschau({ rechnungsDaten }: RechnungsVorschauProps) {
+export default function RechnungsVorschau({ rechnungsDaten, isLoading }: RechnungsVorschauProps) {
   const positionen = (rechnungsDaten?.positionen ?? []).map((pos, index) => {
     const lkCodeRaw =
       typeof pos?.lkCode === 'string' && pos.lkCode.trim().length > 0
@@ -116,6 +117,21 @@ export default function RechnungsVorschau({ rechnungsDaten }: RechnungsVorschauP
     rechnungsDaten.zinv === null || rechnungsDaten.zinv === undefined
       ? null
       : toNumber(rechnungsDaten.zinv);
+
+  // ✅ Loading State anzeigen
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Originalrechnung Vorschau
+        </h2>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">Rechnung wird analysiert...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
