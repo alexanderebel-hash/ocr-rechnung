@@ -38,6 +38,7 @@ const LK_PREISE: Record<string, { bezeichnung: string; preis: number }> = {
   'LK20_HH': { bezeichnung: 'Häusliche Betreuung §124 SGB XI (Haushaltsbuch)', preis: 8.26 },
   'LK20.1': { bezeichnung: 'Häusliche Betreuung §124 SGB XI', preis: 8.26 },
   'LK20.2': { bezeichnung: 'Häusliche Betreuung §124 SGB XI (Haushaltsbuch)', preis: 8.26 },
+  'AUB': { bezeichnung: 'Ausbildungsumlage', preis: 0 },
 };
 
 interface RechnungsVorschauProps {
@@ -63,8 +64,8 @@ interface RechnungsVorschauProps {
     zwischensumme?: number | string | null;
     gesamtbetrag?: number | string | null;
     zinv?: number | string | null;
-  };
-  isLoading?: boolean; // ✅ HINZUGEFÜGT
+  } | null;
+  isLoading?: boolean;
 }
 
 function toNumber(
@@ -77,6 +78,20 @@ function toNumber(
 }
 
 export default function RechnungsVorschau({ rechnungsDaten, isLoading }: RechnungsVorschauProps) {
+  // ✅ Früher Return für null
+  if (!rechnungsDaten) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Originalrechnung Vorschau
+        </h2>
+        <div className="text-gray-500 text-center py-8">
+          Keine Rechnungsdaten vorhanden
+        </div>
+      </div>
+    );
+  }
+
   const positionen = (rechnungsDaten?.positionen ?? []).map((pos, index) => {
     const lkCodeRaw =
       typeof pos?.lkCode === 'string' && pos.lkCode.trim().length > 0
@@ -110,7 +125,7 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
     };
   });
 
-const hatPositionen = positionen.length > 0;
+  const hatPositionen = positionen.length > 0;
   const zwischensumme = toNumber(rechnungsDaten?.zwischensumme);
   const gesamtbetrag = toNumber(rechnungsDaten?.gesamtbetrag);
   const zinvValue =
@@ -142,13 +157,13 @@ const hatPositionen = positionen.length > 0;
       {/* Rechnungskopf */}
       <div className="bg-blue-50 rounded-lg p-4 mb-4">
         <div className="grid grid-cols-2 gap-4">
-          {rechnungsDaten.rechnungsNummer && (
+          {rechnungsDaten?.rechnungsNummer && (
             <div>
               <label className="block text-sm text-gray-600 mb-1">Rechnungsnummer</label>
               <p className="font-medium text-gray-900">{rechnungsDaten.rechnungsNummer}</p>
             </div>
           )}
-          {rechnungsDaten.rechnungsDatum && (
+          {rechnungsDaten?.rechnungsDatum && (
             <div>
               <label className="block text-sm text-gray-600 mb-1">Rechnungsdatum</label>
               <p className="font-medium text-gray-900">{rechnungsDaten.rechnungsDatum}</p>
@@ -158,7 +173,7 @@ const hatPositionen = positionen.length > 0;
       </div>
 
       {/* Zeitraum */}
-      {rechnungsDaten.zeitraum && (
+      {rechnungsDaten?.zeitraum && (
         <div className="bg-gray-50 rounded-lg p-4 mb-4">
           <h4 className="font-semibold text-gray-900 mb-2">Leistungszeitraum</h4>
           {rechnungsDaten.zeitraum.monat && (
@@ -173,7 +188,7 @@ const hatPositionen = positionen.length > 0;
       )}
 
       {/* Klient */}
-      {rechnungsDaten.klient && (
+      {rechnungsDaten?.klient && (
         <div className="bg-gray-50 rounded-lg p-4 mb-4">
           <h4 className="font-semibold text-gray-900 mb-2">Klient</h4>
           {rechnungsDaten.klient.name && (
