@@ -110,13 +110,13 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
     };
   });
 
-  const hatPositionen = positionen.length > 0;
-  const zwischensumme = toNumber(rechnungsDaten.zwischensumme);
-  const gesamtbetrag = toNumber(rechnungsDaten.gesamtbetrag);
+const hatPositionen = positionen.length > 0;
+  const zwischensumme = toNumber(rechnungsDaten?.zwischensumme);
+  const gesamtbetrag = toNumber(rechnungsDaten?.gesamtbetrag);
   const zinvValue =
-    rechnungsDaten.zinv === null || rechnungsDaten.zinv === undefined
+    rechnungsDaten?.zinv === null || rechnungsDaten?.zinv === undefined
       ? null
-      : toNumber(rechnungsDaten.zinv);
+      : toNumber(rechnungsDaten?.zinv);
 
   // ✅ Loading State anzeigen
   if (isLoading) {
