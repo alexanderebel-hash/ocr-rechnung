@@ -1,78 +1,82 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { list } from '@vercel/blob';
-import { unstable_noStore as noStore } from 'next/cache';
-import { parseExcelBewilligung } from '@/lib/excelParser';
+import { NextResponse } from 'next/server';
+import * as XLSX from 'xlsx';
+import type { ApprovalPayload, ApprovalLK, Frequency } from '@/lib/approvalsTypes';
 
-export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
-export async function POST(req: NextRequest) {
-  noStore();
-
-  try {
-    const { key } = await req.json();
-    if (!key || !key.toLowerCase().endsWith('.xlsx')) {
-      return NextResponse.json({ success: false, error: 'Ungültiger Blob-Key.' }, { status: 400 });
-    }
-
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
-
-    const { blobs } = await list({ prefix: key, token });
-    const blob = blobs.find(b => b.pathname === key);
-    if (!blob?.url) {
-      return NextResponse.json({ success: false, error: 'Datei im Blob nicht gefunden.' }, { status: 404 });
-    }
-
-    // Cold fetch – kein Cache
-    const cacheBuster = `?t=${Date.now()}`;
-    const res = await fetch(blob.url + cacheBuster, { cache: 'no-store' });
-    if (!res.ok) {
-      return NextResponse.json({ success: false, error: `Download-Fehler (${res.status})` }, { status: 502 });
-    }
-
-    const buf = await res.arrayBuffer();
-
-    // Use existing excelParser for consistent parsing
-    const parsed = await parseExcelBewilligung(buf);
-
-    // Transform to format expected by frontend
-    const data = {
-      klient: {
-        nachname: parsed.klient.name.split(' ').pop() || parsed.klient.name,
-        vorname: parsed.klient.name.split(' ').slice(0, -1).join(' ') || '',
-        pflegegrad: parsed.klient.pflegegrad,
-        adresse: parsed.klient.adresse,
-      },
-      zeitraum: {
-        von: formatDateToGerman(parsed.zeitraum.von),
-        bis: formatDateToGerman(parsed.zeitraum.bis),
-      },
-      leistungen: parsed.leistungen.map(l => ({
-        leistungsart: l.lk_code,
-        bezeichnung: l.leistung,
-        einheit: l.je_woche > 0 ? 'x/Woche' : 'x/Monat',
-        menge: l.je_woche > 0 ? l.je_woche : l.je_monat,
-        minuten: 0,
-        einzelpreis: l.einzelpreis,
-      })),
-      kasse: '',
-      versichertennummer: '',
-    };
-
-    return NextResponse.json({ success: true, data, meta: { key, filename: blob.pathname.split('/').pop() } });
-  } catch (err: any) {
-    console.error('Error loading bewilligung:', err);
-    return NextResponse.json({ success: false, error: err?.message ?? 'Unbekannter Fehler' }, { status: 500 });
-  }
+function norm(s: any) {
+  return (s ?? '').toString().replace(/\s+/g, ' ').trim().toLowerCase();
+}
+function num(v: any): number | null {
+  if (v == null || v === '') return null;
+  const n = Number(String(v).replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+function toFreq(row: Record<string, any>): Frequency {
+  const weekly = row['bewilligt pro woche'] ?? row['pro woche'];
+  const monthly = row['bewilligt pro monat'] ?? row['pro monat'];
+  if (weekly != null && monthly == null) return 'weekly';
+  if (monthly != null && weekly == null) return 'monthly';
+  // Default: monthly, falls beide vorhanden → nimm Monatszahl
+  return 'monthly';
+}
+function qtyFrom(row: Record<string, any>, freq: Frequency): number {
+  const w = num(row['bewilligt pro woche'] ?? row['pro woche']);
+  const m = num(row['bewilligt pro monat'] ?? row['pro monat']);
+  if (freq === 'weekly' && w != null) return w;
+  if (freq === 'monthly' && m != null) return m;
+  // Fallbacks
+  if (m != null) return m;
+  if (w != null) return Math.round(w * 4.3);
+  return 0;
 }
 
-function formatDateToGerman(isoDate: string): string {
-  // Convert YYYY-MM-DD to DD.MM.YYYY
-  if (!isoDate) return '';
-  const match = isoDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (match) {
-    return `${match[3]}.${match[2]}.${match[1]}`;
+export async function POST(req: Request) {
+  try {
+    const { url, klientId, period } = await req.json() as { url: string; klientId?: string; period?: string };
+    if (!url) return NextResponse.json({ ok: false, error: 'url missing' }, { status: 400 });
+
+    const r = await fetch(url);
+    if (!r.ok) return NextResponse.json({ ok: false, error: `fetch failed (${r.status})` }, { status: 502 });
+    const buf = await r.arrayBuffer();
+
+    const wb = XLSX.read(buf, { type: 'array' });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const raw = XLSX.utils.sheet_to_json<any>(sheet, { defval: null });
+
+    const rows = raw.map((row: any) => {
+      const cols: Record<string, any> = {};
+      for (const k of Object.keys(row)) cols[norm(k)] = row[k];
+      return cols;
+    });
+
+    // Mapping auf ApprovalLK (approved TRUE als Default, wenn in Bewilligungsliste enthalten)
+    const lks: ApprovalLK[] = rows
+      .map((r) => {
+        const code = String(r['lk-code'] ?? r['lk'] ?? '').trim();
+        const label = String(r['leistungsbezeichnung'] ?? r['bezeichnung'] ?? '').trim();
+        if (!code) return null;
+        const freq = toFreq(r);
+        const qty = qtyFrom(r, freq);
+        // Wichtig: approved NICHT verlieren
+        const approvedCell = r['approved'] ?? r['genehmigt'] ?? true;
+        const approved = typeof approvedCell === 'string'
+          ? /^(true|ja|1|x)$/i.test(approvedCell.trim())
+          : Boolean(approvedCell);
+
+        return { code, label, approved, freq, qty } as ApprovalLK;
+      })
+      .filter(Boolean) as ApprovalLK[];
+
+    const payload: ApprovalPayload = {
+      klientId: klientId ?? null,
+      period: period ?? null,
+      lks,
+    };
+
+    return NextResponse.json({ ok: true, approval: payload });
+  } catch (err: any) {
+    console.error('bewilligungen/load:', err);
+    return NextResponse.json({ ok: false, error: err?.message ?? 'load failed' }, { status: 500 });
   }
-  return isoDate;
 }

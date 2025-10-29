@@ -1,13 +1,16 @@
 /* lib/billing/calc.ts
    Korrekte Abrechnungslogik nach DomusVita-Regeln
-   - Sonderregel 1: LK14 -> LK15 (mit AUB 15)
+   - Sonderregel 1: LK14 -> LK15 (mit AUB 15), nur wenn LK15 genehmigt
    - Sonderregel 2: LK04 ↔ LK02 (kombinierbar bei bew. LK04)
    - Sonderregel 3: LK03a ↔ LK01 (kombinierbar bei bew. LK03a)
-   - 5‑Wochen‑Regel für wöchentliche Bewilligungen
-   - ZINV 3,38 % auf Zwischensumme (LK + AUB), BA‑Abzug (Pflegekasse)
-   - Ausgabe: BA‑Rechnung & Privatrechnung (je Positionen + Summen)
-   
-   ✅ FIX: Berücksichtigt nur genehmigte Leistungen (genehmigt === true)
+   - 5-Wochen-Regel für wöchentliche Bewilligungen
+   - ZINV 3,38 % auf Zwischensumme (LK + AUB), BA-Abzug (Pflegekasse)
+   - Ausgabe: BA-Rechnung & Privatrechnung (je Positionen + Summen)
+
+   ✅ FIXES:
+   - Berücksichtigt nur genehmigte Leistungen (genehmigt === true)
+   - SR1 verschiebt nur, wenn LK15 genehmigt ist (Limit > 0)
+   - Privatbetrag: kein künstlicher Zuschlag, wenn BA-Budget > BA-Gesamt
 */
 
 export type LKCode =
@@ -20,7 +23,7 @@ export type BewilligungsPosten = {
   code: LKCode;
   menge: number;          // Anzahl lt. Bewilligung (z. B. 1 bei "1x/Woche")
   einheit: Einheit;       // 'x/Woche' oder 'x/Monat'
-  genehmigt?: boolean;    // ✅ NEU: Ist diese Leistung genehmigt? (aus Excel)
+  genehmigt?: boolean;    // Ist diese Leistung genehmigt? (aus Excel)
 };
 
 export type Rechnungsposten = {
@@ -37,7 +40,7 @@ export type Bewilligung = {
 };
 
 export type Invoice = {
-  zeitraum?: { monat?: string }; // 'YYYY-MM' (optional; wenn fehlt, 5‑Wochen-Regel anhand Datum von Bewilligung)
+  zeitraum?: { monat?: string }; // 'YYYY-MM' (optional)
   positionen: Rechnungsposten[];
 };
 
@@ -49,7 +52,7 @@ export type ComputeOptions = {
   pflegekassenBudget?: number;  // z. B. 796.00
   zinvSatz?: number;            // default 0.0338
   priceTable: PriceTable;       // Preise €/Stück
-  aubTable: AUBTable;           // AUB €/Stück (1:1 pro LK‑Stück)
+  aubTable: AUBTable;           // AUB €/Stück (1:1 pro LK-Stück)
 };
 
 export type CalcLine = {
@@ -82,7 +85,8 @@ export type CalcResult = {
 
 const EUR = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 const nz = (n: any) => (Number.isFinite(+n) ? +n : 0);
-const norm = (s: string): LKCode => String(s).trim().toUpperCase().replace(/\s+/g, '').replace('LK03A', 'LK03a');
+const norm = (s: string): LKCode =>
+  String(s).trim().toUpperCase().replace(/\s+/g, '').replace('LK03A', 'LK03a' as LKCode);
 
 function parseMonthOrFallback(bew?: Bewilligung, optMonth?: string): { y: number; m: number } {
   // bevorzugt options.month 'YYYY-MM'
@@ -93,17 +97,14 @@ function parseMonthOrFallback(bew?: Bewilligung, optMonth?: string): { y: number
   // sonst aus bewilligung.zeitraum.von -> 'TT.MM.JJJJ'
   const von = bew?.zeitraum?.von || '';
   const m = von.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-  if (m) {
-    return { y: +m[3], m: +m[2] };
-  }
-  // Fallback: aktueller Monat (serverzeit)
+  if (m) return { y: +m[3], m: +m[2] };
+  // Fallback: aktueller Monat (Serverzeit)
   const d = new Date();
   return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1 };
 }
 
 /** Hat der Monat 5 Vorkommen irgendeines Wochentages? (typisch = "5 Wochen") */
 function hasFiveOccurrencesInMonth(y: number, m: number): boolean {
-  const first = new Date(Date.UTC(y, m - 1, 1));
   const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
   const counts = Array(7).fill(0);
   for (let d = 1; d <= days; d++) {
@@ -113,7 +114,7 @@ function hasFiveOccurrencesInMonth(y: number, m: number): boolean {
   return counts.some(c => c >= 5);
 }
 
-/** Wochenfaktor für "x/Woche": standard 4.33, bei 5‑Wochen‑Monat = 5 */
+/** Wochenfaktor für "x/Woche": standard 4.33, bei 5-Wochen-Monat = 5 */
 function weeklyFactor(y: number, m: number): number {
   return hasFiveOccurrencesInMonth(y, m) ? 5 : 4.33;
 }
@@ -149,49 +150,31 @@ export function computeCorrection(
   const budget = nz(opt.pflegekassenBudget ?? 0);
   const { y, m } = parseMonthOrFallback(bew, opt.month);
 
-  // ✅ FIX: Nur genehmigte Leistungen berücksichtigen
-  console.log('\n═══ CALC.TS DEBUG ═══');
-  console.log('Bewilligung Leistungen (gesamt):', bew.leistungen?.length || 0);
-
+  // ✅ Nur genehmigte Leistungen berücksichtigen
   // 1) Bewilligung -> Monatslimits je LK (NUR für genehmigte Leistungen!)
   const limit = new Map<LKCode, number>();
   let genehmigteCount = 0;
   let nichtGenehmigteCount = 0;
-  
+
   for (const b of bew.leistungen || []) {
     if (!b) continue;
-    
     const code = norm(b.code);
-    
-    // ✅ KRITISCHER FIX: Prüfe ob genehmigt
-    // Falls 'genehmigt' Property nicht existiert (alte Daten), nehmen wir an: genehmigt wenn menge > 0
+
+    // Genehmigt prüfen (Fallback: menge>0)
     const istGenehmigt = b.genehmigt !== undefined ? b.genehmigt === true : (nz(b.menge) > 0);
-    
     if (!istGenehmigt) {
       nichtGenehmigteCount++;
-      console.log(`  ❌ ${code}: NICHT GENEHMIGT (menge: ${b.menge}, genehmigt: ${b.genehmigt})`);
-      continue; // ✅ Überspringe nicht genehmigte Leistungen!
+      continue;
     }
-    
+
     genehmigteCount++;
     const lim = toMonthlyApproved(nz(b.menge), b.einheit, y, m);
     limit.set(code, (limit.get(code) ?? 0) + lim);
-    console.log(`  ✅ ${code}: GENEHMIGT (limit: ${lim})`);
-  }
-  
-  console.log(`\n📊 Zusammenfassung:`);
-  console.log(`  Genehmigt: ${genehmigteCount}`);
-  console.log(`  Nicht genehmigt: ${nichtGenehmigteCount}`);
-  console.log(`  Limits gesetzt:`, Object.fromEntries(limit));
-
-  if (genehmigteCount === 0) {
-    console.error('\n🚨 WARNUNG: Keine einzige Leistung wurde als genehmigt erkannt!');
-    console.error('   → Zwischensumme wird 0,00 EUR sein!');
   }
 
   // 2) Erbrachte Mengen je LK (aus OCR-Rechnung)
   const erbracht = new Map<LKCode, number>();
-  const priceOver = new Map<LKCode, number>(); // evtl. vom OCR erkannte Preise (selten)
+  const priceOver = new Map<LKCode, number>(); // evtl. vom OCR erkannte Preise
   const aubOver = new Map<LKCode, number>();
   for (const p of inv.positionen || []) {
     const code = norm(p.code);
@@ -215,20 +198,22 @@ export function computeCorrection(
 
   // ---------- SONDERREGELN ----------
 
-  // SR1: LK14 -> LK15
+  // SR1: LK14 -> LK15  (nur wenn LK15 genehmigt/Limit > 0)
   {
     const e14 = nz(erbracht.get('LK14'));
     const e15 = nz(erbracht.get('LK15'));
-    const l15 = nz(limit.get('LK15'));
-    if (e14 > 0 || e15 > 0) {
+    const l15 = nz(limit.get('LK15')); // >0 bedeutet: genehmigt & vorhanden
+
+    if ((e14 > 0 || e15 > 0) && l15 > 0) {
+      // nur dann überhaupt auf 15 schieben
       if (e14 + e15 <= l15) {
         // alles in LK15, LK14 = 0
         baMenge.set('LK14', 0);
-        privatMenge.set('LK14', 0); // 14 verschwindet, wird über 15 abgerechnet
+        privatMenge.set('LK14', 0);
         baMenge.set('LK15', e14 + e15);
         privatMenge.set('LK15', 0);
       } else {
-        // 14 nicht abrechenbar, 15 auf Limit
+        // 14 nicht abrechenbar (weil 15 deckelt), 15 auf Limit
         baMenge.set('LK14', 0);
         privatMenge.set('LK14', e14);
         const bill15 = Math.min(e15, l15);
@@ -236,9 +221,10 @@ export function computeCorrection(
         privatMenge.set('LK15', Math.max(0, e15 - bill15));
       }
     }
+    // Falls LK15 NICHT genehmigt (l15 == 0), keine Verschiebung – 14 bleibt privat/abzurechnen wie oben bestimmt.
   }
 
-  // SR2: LK04 ↔ LK02 (nur wenn LK04 bewilligt)
+  // SR2: LK04 ↔ LK02 (nur wenn LK04 bewilligt → limit.get('LK04') > 0)
   {
     const l04 = nz(limit.get('LK04'));
     const e04 = nz(erbracht.get('LK04'));
@@ -282,7 +268,7 @@ export function computeCorrection(
 
   // 4) Positionen + Summen bilden (BA & Privat)
   const mkPos = (code: LKCode, menge: number, price: number, isAUB = false): CalcLine | null => {
-    if (menge <= 0) return null;
+    if (menge <= 0 || !Number.isFinite(price) || price < 0) return null;
     const sum = EUR(menge * price);
     return { code, menge, einzelpreis: EUR(price), summe: sum, isAUB };
   };
@@ -303,7 +289,7 @@ export function computeCorrection(
   for (const c0 of everyCode) {
     const c = norm(c0);
 
-    // SR1: AUB immer nach Ziel-LK abrechnen, d.h. für 14->15 die AUB von 15
+    // SR1: AUB am Ziel-LK abrechnen; bei 14→15 die AUB von 15
     const aubCode = (c === 'LK14') ? ('LK15' as LKCode) : c;
 
     const baQty = nz(baMenge.get(c));
@@ -331,22 +317,13 @@ export function computeCorrection(
   const baAbzug = Math.min(baGes, budget);
   const baBetrag = EUR(baGes - baAbzug);
 
-  console.log(`\n💰 BERECHNETE SUMMEN:`);
-  console.log(`  BA Zwischensumme: ${baZw.toFixed(2)} EUR`);
-  console.log(`  BA ZINV: ${baZinv.toFixed(2)} EUR`);
-  console.log(`  BA Gesamt: ${baGes.toFixed(2)} EUR`);
-  console.log(`  BA Rechnungsbetrag: ${baBetrag.toFixed(2)} EUR`);
-
   // Summen Privat (inkl. anteiliger ZINV)
   const prZw = EUR(privatLines.reduce((s, x) => s + x.summe, 0));
   const prZinv = EUR(prZw * zinv);
   const prGes = EUR(prZw + prZinv);
 
-  // Wenn BA‑Betrag negativ (sollte aufgrund min() nicht passieren), schieben wir Differenz in Privat
-  // oder wenn Budget größer als BA‑Gesamt war -> Differenz bleibt ohne weitere Umbuchung (BA wird 0)
-  const privatEndbetrag = EUR(prGes + Math.max(0, budget - baGes));
-
-  console.log('═══ CALC.TS DEBUG ENDE ═══\n');
+  // ❗ Kein künstlicher Zuschlag auf Privat, wenn Budget > BA-Gesamt:
+  const privatEndbetrag = prGes;
 
   return {
     debug: {
@@ -356,8 +333,8 @@ export function computeCorrection(
       erbracht: Object.fromEntries(erbracht),
       baMenge: Object.fromEntries(baMenge),
       privatMenge: Object.fromEntries(privatMenge),
-      genehmigteLeistungen: genehmigteCount,  // ✅ NEU
-      nichtGenehmigteLeistungen: nichtGenehmigteCount,  // ✅ NEU
+      genehmigteLeistungen: genehmigteCount,
+      nichtGenehmigteLeistungen: nichtGenehmigteCount,
     },
     ba: {
       positionen: baLines,
