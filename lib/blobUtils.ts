@@ -23,5 +23,5 @@ export async function listApprovals(prefix = "approvals/"): Promise<ApprovalFile
 
 /** Private Upload – Wrapper für API-Routen */
 export async function putPrivate(path: string, file: File | Blob) {
-  return await put(path, file, { access: "private" });
+  return await put(path, file, { access: "private" as any });
 }
