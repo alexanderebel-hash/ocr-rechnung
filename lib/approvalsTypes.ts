@@ -22,12 +22,24 @@ export interface ApprovalPayload {
   lks: ApprovalLK[];
 }
 
-// --- Legacy type aliases for backward compatibility ---
-export type BewilligungsEintrag = ApprovalLK;
+// --- Excel-facing types used by BewilligungsAnsicht ---
 
-// Rechnungseintrag hinzufügen (analog zu vorheriger Struktur)
-export interface RechnungEintrag {
+export interface BewilligungsEintrag {
+  /** Leistungs­komplex-Code, e.g., "LK14" */
   lkCode: string;
+  /** Beschreibung laut Bewilligung */
+  leistungsbezeichnung: string;
+  /** Anzahl bewilligter Leistungen pro Woche (optional) */
+  bewilligtProWoche?: number | null;
+  /** Anzahl bewilligter Leistungen pro Monat (optional) */
+  bewilligtProMonat?: number | null;
+}
+
+export interface RechnungEintrag {
+  /** LK-Code, e.g., "LK14" */
+  lkCode: string;
+  /** Anzahl laut Rechnung (OCR/Medifox) */
   anzahlImMonat: number;
+  /** Optionale Beschreibung aus Rechnung */
   leistungsbezeichnung?: string | null;
 }
