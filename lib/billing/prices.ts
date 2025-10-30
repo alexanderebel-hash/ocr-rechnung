@@ -69,3 +69,24 @@ export const AUB: AUBTable = {
  * 3,38% auf Zwischensumme (LK + AUB)
  */
 export const ZINV_RATE = 0.0338;
+
+export const prices: Record<string, number> = {
+  LK01: 13.12,
+  LK02: 17.54,
+  LK03a: 23.90,
+  LK03b: 26.70,
+  LK04: 20.55,
+  LK05: 5.40,
+  LK06: 3.60,
+  LK07a: 4.25,
+  LK07b: 6.20,
+  LK11b: 8.90,
+  LK12: 9.20,
+  LK13: 7.30,
+  LK14: 9.62,
+  LK15: 7.44,
+  LK17a: 3.50,
+  LK17b: 4.10,
+  LK20: 8.26,
+  LK20_HH: 8.26,
+};
