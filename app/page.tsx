@@ -99,6 +99,19 @@ export default function Home() {
       );
     }
 
+    const allValidPositions =
+      rechnungsPositionen.length > 0 &&
+      rechnungsPositionen.every((p: any) => {
+        const code = normalizeLKCode(p.lkCode || p.code || "");
+        const price = Number(p.preis ?? p.einzelpreis ?? 0);
+        return /^LK\d{1,2}[A-Za-z]?$/.test(code) && Number.isFinite(price) && price >= 0;
+      });
+
+    if (!allValidPositions) {
+      console.warn('OCR invalid → abort correction');
+      return null;
+    }
+
     console.log('\n=== STARTE KORREKTURRECHNUNG (Neue Billing Engine) ===');
 
     // Transform bewilligung data to billing engine format

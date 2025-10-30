@@ -120,10 +120,28 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
     );
   }
 
+  const legacyPositions = Array.isArray(rechnungsDaten?.positionen)
+    ? (rechnungsDaten?.positionen as any[])
+    : [];
+  const subtotalFromLegacy = legacyPositions.reduce((sum, p) => {
+    const menge = Number(p.summe ?? p.gesamt);
+    if (Number.isFinite(menge) && menge > 0) return sum + menge;
+    const qty = Number(p.menge ?? p.quantity ?? 0);
+    const price = Number(p.einzelpreis ?? p.unitPrice ?? 0);
+    return sum + (Number.isFinite(qty * price) ? qty * price : 0);
+  }, 0);
+
+  const hasLegacyInvalidCodes = legacyPositions.some((p: any) => {
+    const code = String(p.code ?? p.lkCode ?? "").trim();
+    return code.length === 0 || !/^LK\d{1,2}[A-Za-z]?$/.test(code);
+  });
+
   const rawPositions =
-    Array.isArray(rechnungsDaten?.ocr?.positions)
+    legacyPositions.length > 0
+      ? legacyPositions
+      : Array.isArray(rechnungsDaten?.ocr?.positions)
       ? rechnungsDaten?.ocr?.positions ?? []
-      : rechnungsDaten?.positionen ?? [];
+      : [];
 
   const positionen = (rawPositions as any[]).map((pos, index) => {
     const lkCodeSource =
@@ -190,10 +208,9 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
       ? null
       : toNumber(rechnungsDaten?.zinv);
 
-  const anzeigenZwischensumme = hatPositionen ? berechneteZwischensumme : zwischensumme;
-  const anzeigenGesamtbetrag = hatPositionen
-    ? berechneteZwischensumme + (zinvValue ?? 0)
-    : gesamtbetrag;
+  const subtotalForDisplay = legacyPositions.length > 0 ? subtotalFromLegacy : berechneteZwischensumme;
+  const anzeigenZwischensumme = subtotalForDisplay;
+  const anzeigenGesamtbetrag = subtotalForDisplay;
 
   const hatReportedZwischensumme =
     reportedZwischensummeRaw !== null && reportedZwischensummeRaw !== undefined && reportedZwischensummeRaw !== '';
@@ -296,6 +313,12 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
           Rechnungspositionen ({positionen.length})
         </h4>
 
+        {hasLegacyInvalidCodes && (
+          <div className="mb-3 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
+            ⚠️ Einige Positionen ohne gültigen LK-Code erkannt. Bitte OCR erneut ausführen.
+          </div>
+        )}
+
         {!hatPositionen ? (
           <div className="text-gray-500 text-sm space-y-1">
             <p>Keine Rechnungspositionen vorhanden oder nicht erkannt.</p>
@@ -365,9 +388,7 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
 
           <div className="flex justify-between items-center pt-2 border-t-2 border-blue-300">
             <span className="text-lg font-bold text-gray-900">Gesamtbetrag:</span>
-            <span className="text-xl font-bold text-blue-600">
-              {anzeigenGesamtbetrag.toFixed(2)} €
-            </span>
+            <span className="text-xl font-bold text-blue-600">{anzeigenGesamtbetrag.toFixed(2)} €</span>
           </div>
         </div>
       </div>
