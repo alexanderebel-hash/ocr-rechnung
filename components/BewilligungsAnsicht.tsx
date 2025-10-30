@@ -3,7 +3,7 @@ import * as XLSX from "xlsx";
 import {
   BewilligungsEintrag,
   RechnungEintrag,
-} from "../lib/bewilligungTypes";
+} from "../lib/approvalsTypes";
 import { vergleicheBewilligungMitRechnung } from "../lib/compareAbgleich";
 
 /**
