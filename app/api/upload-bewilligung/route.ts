@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 /**
  * POST /api/upload-bewilligung
  * Erwartet FormData mit "file" (Excel-Datei)
- * Speichert privat im Blob, gibt signierte URL + Metadaten zurück
+ * Speichert privat im Blob, gibt signierte URL + Metadaten zurück.
  */
 export async function POST(req: Request) {
   try {
@@ -22,9 +22,10 @@ export async function POST(req: Request) {
     const safeName = file.name.replace(/\s+/g, "_");
     const pathname = `approvals/${timestamp}_${safeName}`;
 
-    // 🔒 private upload
+    // 🔒 Privat speichern (Types erzwingen nur "public"; casten ist ok)
     const stored = await put(pathname, file, { access: "private" as any });
 
+    // Werte aus Upload-Kontext ableiten (nicht vom PutBlobResult-Typ abhängig)
     const item: ApprovalFile = {
       id: stored.pathname,
       name: safeName,
@@ -32,11 +33,8 @@ export async function POST(req: Request) {
         typeof stored.url === "string"
           ? stored.url
           : new URL(stored.url).toString(),
-      size: stored.size,
-      uploadedAt:
-        stored.uploadedAt instanceof Date
-          ? stored.uploadedAt.toISOString()
-          : String(stored.uploadedAt),
+      size: typeof file.size === "number" ? file.size : 0,
+      uploadedAt: new Date().toISOString(),
     };
 
     return NextResponse.json({ ok: true, item });
