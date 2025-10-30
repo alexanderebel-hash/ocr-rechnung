@@ -94,7 +94,8 @@ async function readPdfFromRequest(req: Request): Promise<ArrayBuffer> {
     return await file.arrayBuffer();
   }
   const body = (await req.json().catch(() => ({}))) as any;
-  if (body.base64) return Buffer.from(String(body.base64), "base64");
+  if (body.base64)
+    return Uint8Array.from(Buffer.from(String(body.base64), "base64")).buffer;
   if (body.url) {
     const r = await fetch(body.url);
     if (!r.ok) throw new Error(`fetch url failed ${r.status}`);
