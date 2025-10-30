@@ -21,3 +21,13 @@ export interface ApprovalPayload {
   period?: string | null;  // z.B. "2025-01"
   lks: ApprovalLK[];
 }
+
+// --- Legacy type aliases for backward compatibility ---
+export type BewilligungsEintrag = ApprovalLK;
+
+// Rechnungseintrag hinzufügen (analog zu vorheriger Struktur)
+export interface RechnungEintrag {
+  lkCode: string;
+  anzahlImMonat: number;
+  leistungsbezeichnung?: string | null;
+}
