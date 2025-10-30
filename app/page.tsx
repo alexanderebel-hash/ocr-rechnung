@@ -47,6 +47,23 @@ const LK_PREISE: Record<string, { bezeichnung: string; preis: number }> = {
   'LK20.2': { bezeichnung: 'Häusliche Betreuung §124 SGB XI (Haushaltsbuch)', preis: 8.26 },
 }; 
 
+const normalizeLKCode = (value: string | undefined | null) => {
+  const upper = String(value || '').toUpperCase().trim().replace(/\s+/g, '');
+  const special: Record<string, string> = {
+    LK03A: 'LK03a',
+    LK03B: 'LK03b',
+    LK07A: 'LK07a',
+    LK07B: 'LK07b',
+    LK08A: 'LK08a',
+    LK08B: 'LK08b',
+    LK11A: 'LK11a',
+    LK11B: 'LK11b',
+    LK17A: 'LK17a',
+    LK17B: 'LK17b',
+  };
+  return special[upper] ?? upper;
+};
+
 interface RechnungsPosition {
   lkCode: string;
   bezeichnung: string;
@@ -89,22 +106,44 @@ export default function Home() {
       klient: bewilligung.klient,
       zeitraum: bewilligung.zeitraum,
       leistungen: (bewilligung.leistungen || []).map((l: any) => ({
-        code: l.lkCode || l.leistungsart,
+        code: normalizeLKCode(l.lkCode || l.leistungsart),
         menge: l.menge || l.jeMonat || l.jeWoche || 0,
         einheit: l.jeWoche ? 'x/Woche' : 'x/Monat',
+        genehmigt: l.genehmigt ?? l.approved ?? true,
       }))
     };
 
     // Transform invoice data to billing engine format
+    const billingInvPositionen = rechnungsPositionen
+      .filter((p: any) => !p.istAUB) // AUBs werden von Engine automatisch berechnet
+      .map((p: any) => {
+        const code = normalizeLKCode(p.lkCode ?? p.code);
+        const menge = Number(p.menge) || 0;
+        const preisRaw = Number(p.preis);
+        const fallbackPreis = (PRICES as Record<string, number>)[code];
+        const einzelpreis = Number.isFinite(preisRaw) && preisRaw > 0 ? preisRaw : fallbackPreis;
+        return {
+          code,
+          menge,
+          einzelpreis,
+        };
+      })
+      .filter((pos: any) => pos.menge > 0);
+
+    const invalidOcrPositions = billingInvPositionen.filter((pos: any) => {
+      const validCode = /^LK\d{1,2}[A-Za-z]?$/.test(pos.code);
+      const validPreis = Number.isFinite(pos.einzelpreis) && (pos.einzelpreis as number) > 0;
+      return !validCode || !validPreis;
+    });
+
+    if (invalidOcrPositions.length > 0) {
+      console.warn('[Home] Abbruch: OCR-Positionen ohne gültigen LK-Code oder Preis', invalidOcrPositions);
+      return null;
+    }
+
     const billingInv: BillingInvoice = {
       zeitraum: { monat: invoiceData.zeitraum?.monat },
-      positionen: rechnungsPositionen
-        .filter((p: any) => !p.istAUB) // AUBs werden von Engine automatisch berechnet
-        .map((p: any) => ({
-          code: p.lkCode || p.code,
-          menge: Number(p.menge) || 0,
-          einzelpreis: Number(p.preis) || undefined,
-        }))
+      positionen: billingInvPositionen,
     };
 
     // Get current month or use invoice month

@@ -41,6 +41,23 @@ const LK_PREISE: Record<string, { bezeichnung: string; preis: number }> = {
   'AUB': { bezeichnung: 'Ausbildungsumlage', preis: 0 },
 };
 
+const normalizeLKCode = (value: string | undefined | null) => {
+  const upper = String(value || '').toUpperCase().trim().replace(/\s+/g, '');
+  const special: Record<string, string> = {
+    LK03A: 'LK03a',
+    LK03B: 'LK03b',
+    LK07A: 'LK07a',
+    LK07B: 'LK07b',
+    LK08A: 'LK08a',
+    LK08B: 'LK08b',
+    LK11A: 'LK11a',
+    LK11B: 'LK11b',
+    LK17A: 'LK17a',
+    LK17B: 'LK17b',
+  };
+  return special[upper] ?? upper;
+};
+
 interface RechnungsVorschauProps {
   rechnungsDaten: {
     rechnungsNummer?: string | null;
@@ -97,6 +114,7 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
       typeof pos?.lkCode === 'string' && pos.lkCode.trim().length > 0
         ? pos.lkCode
         : undefined;
+    const normalizedLkCode = lkCodeRaw ? normalizeLKCode(lkCodeRaw) : undefined;
 
     const bezeichnungRaw =
       typeof pos?.bezeichnung === 'string' && pos.bezeichnung.trim().length > 0
@@ -104,13 +122,13 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
         : undefined;
 
     const menge = toNumber(pos?.menge);
-    const preis = toNumber(pos?.preis);
+    const lkCode = normalizedLkCode ?? `Pos-${index + 1}`;
+    const defaultPreis = LK_PREISE[lkCode]?.preis ?? 0;
+    const preis = toNumber(pos?.preis, defaultPreis);
     const gesamt = toNumber(
       pos?.gesamt,
-      Number.isFinite(menge * preis) ? menge * preis : 0,
+      Number.isFinite(menge * preis) ? menge * preis : menge * defaultPreis,
     );
-
-    const lkCode = lkCodeRaw ?? `Pos-${index + 1}`;
     
     // ✅ FIX: Hole Bezeichnung aus LK_PREISE wenn OCR keine liefert
     const bezeichnung = bezeichnungRaw ?? LK_PREISE[lkCode]?.bezeichnung ?? 'Unbekannte Leistung';
@@ -126,12 +144,42 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
   });
 
   const hatPositionen = positionen.length > 0;
+  const invalidPositionen = positionen.filter((pos) => {
+    const validCode = /^LK\d{1,2}[A-Za-z]?$/.test(pos.lkCode) || pos.lkCode === 'AUB';
+    const validPreis = Number.isFinite(pos.preis) && (pos.preis > 0 || pos.lkCode === 'AUB');
+    return !validCode || !validPreis;
+  });
+  const berechneteZwischensumme = positionen.reduce((sum, pos) => sum + (Number.isFinite(pos.gesamt) ? pos.gesamt : 0), 0);
+
+  const reportedZwischensummeRaw = rechnungsDaten?.zwischensumme;
   const zwischensumme = toNumber(rechnungsDaten?.zwischensumme);
   const gesamtbetrag = toNumber(rechnungsDaten?.gesamtbetrag);
   const zinvValue =
     rechnungsDaten?.zinv === null || rechnungsDaten?.zinv === undefined
       ? null
       : toNumber(rechnungsDaten?.zinv);
+
+  const anzeigenZwischensumme = hatPositionen ? berechneteZwischensumme : zwischensumme;
+  const anzeigenGesamtbetrag = hatPositionen
+    ? berechneteZwischensumme + (zinvValue ?? 0)
+    : gesamtbetrag;
+
+  const hatReportedZwischensumme =
+    reportedZwischensummeRaw !== null && reportedZwischensummeRaw !== undefined && reportedZwischensummeRaw !== '';
+
+  const differenzWarnung =
+    hatPositionen && hatReportedZwischensumme && Math.abs(berechneteZwischensumme - zwischensumme) > 0.5;
+
+  const warnings: string[] = [];
+  if (invalidPositionen.length) {
+    warnings.push(
+      `${invalidPositionen.length} Position(en) besitzen keinen gültigen LK-Code oder Preis und sollten geprüft werden.`,
+    );
+  }
+  if (differenzWarnung) {
+    warnings.push('Zwischensumme der OCR unterscheidet sich von der berechneten Summe der Positionen.');
+  }
+  const hatWarnungen = warnings.length > 0;
 
   // ✅ Loading State anzeigen
   if (isLoading) {
@@ -200,6 +248,17 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
         </div>
       )}
 
+      {hatWarnungen && (
+        <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+          <p className="font-medium">Hinweis zur OCR-Auswertung</p>
+          <ul className="mt-1 list-disc space-y-1 pl-5">
+            {warnings.map((w, idx) => (
+              <li key={idx}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Rechnungspositionen */}
       <div className="bg-gray-50 rounded-lg p-4 mb-4">
         <h4 className="font-semibold text-gray-900 mb-3">
@@ -225,15 +284,17 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
             </div>
 
             {/* Positionen */}
-            {positionen.map((pos) => (
-              <div
-                key={pos.key}
-                className="grid grid-cols-12 gap-2 py-2 border-b border-gray-200 text-sm"
-              >
-                <div className="col-span-2 font-semibold text-gray-900">
-                  {pos.lkCode}
-                </div>
-                <div className="col-span-5 text-gray-700">
+            {positionen.map((pos) => {
+              const isInvalidRow = invalidPositionen.some((p) => p.key === pos.key);
+              return (
+                <div
+                  key={pos.key}
+                  className={`grid grid-cols-12 gap-2 py-2 border-b border-gray-200 text-sm ${isInvalidRow ? 'bg-red-50' : ''}`}
+                >
+                  <div className="col-span-2 font-semibold text-gray-900">
+                    {pos.lkCode}
+                  </div>
+                  <div className="col-span-5 text-gray-700">
                   {pos.bezeichnung || '-'}
                 </div>
                 <div className="col-span-2 text-right text-gray-900">
@@ -246,7 +307,8 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
                   {pos.gesamt.toFixed(2)} €
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -257,7 +319,7 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
           <div className="flex justify-between items-center">
             <span className="text-gray-700">Zwischensumme:</span>
             <span className="font-semibold text-gray-900">
-              {zwischensumme.toFixed(2)} €
+              {anzeigenZwischensumme.toFixed(2)} €
             </span>
           </div>
 
@@ -273,7 +335,7 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
           <div className="flex justify-between items-center pt-2 border-t-2 border-blue-300">
             <span className="text-lg font-bold text-gray-900">Gesamtbetrag:</span>
             <span className="text-xl font-bold text-blue-600">
-              {gesamtbetrag.toFixed(2)} €
+              {anzeigenGesamtbetrag.toFixed(2)} €
             </span>
           </div>
         </div>
