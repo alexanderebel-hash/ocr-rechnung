@@ -122,6 +122,7 @@ export async function POST(req: Request) {
     const safe = OCRResultSchema.parse(clean);
     const subtotal = safe.positions.reduce((s, p) => s + p.totalPrice, 0);
 
+    // Build legacy shape the UI expects
     const legacy = {
       positionen: safe.positions.map((p) => ({
         code: p.code,
@@ -130,13 +131,24 @@ export async function POST(req: Request) {
         einzelpreis: p.unitPrice,
         summe: p.totalPrice,
       })),
+      // Falls die UI bisher Summenfelder aus dem Response liest:
+      zwischensumme: subtotal,
+      gesamtsumme: subtotal,
+      gesamtbetrag: subtotal,
       meta: {
         invoiceNumber: safe.invoiceNumber || "",
         period: safe.period || null,
       },
     };
 
-    return NextResponse.json({ ok: true, ocr: safe, data: legacy, subtotal });
+    // Send both: modern + legacy; keep legacy also at top-level under the old key:
+    return NextResponse.json({
+      ok: true,
+      ocr: safe,
+      data: legacy,
+      rechnungsDaten: legacy, // <— wichtig: alter Schlüsselname, damit deine UI sofort “richtige” Daten sieht
+      subtotal,
+    });
   } catch (err: any) {
     console.error("[/api/ocr] error:", err?.message);
     return NextResponse.json({ ok: false, error: err?.message || "ocr failed" }, { status: 422 });
