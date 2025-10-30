@@ -199,28 +199,10 @@ export default function Home() {
 
         {/* Bewilligung Dropdown mit Vorschau und Bearbeitung */}
         <BewilligungDropdown
-          onBewilligungConfirmed={(data, meta) => {
-            console.log('✅ Bewilligung bestätigt:', meta.filename);
-            console.log('Klient:', `${data.klient.vorname} ${data.klient.nachname}`);
-            console.log('Zeitraum:', `${data.zeitraum.von} - ${data.zeitraum.bis}`);
-            console.log('Leistungen:', data.leistungen.length);
-
-            // Transform data structure to match existing billing logic
-            const transformedBewilligung = {
-              ...data,
-              leistungen: data.leistungen.map(l => ({
-                lkCode: l.leistungsart,
-                jeWoche: l.einheit.includes('Woche') ? l.menge : 0,
-                jeMonat: l.einheit.includes('Monat') ? l.menge : 0,
-                menge: l.menge,
-                minuten: l.minuten,
-              }))
-            };
-
-            setBewilligung(transformedBewilligung);
-            setBewilligungMeta(meta);
-            setBewilligungConfirmed(true);
+          onLoaded={(approval) => {
+            console.log('✅ Bewilligung geladen:', approval);
           }}
+          adminMode={false}
         />
 
         {/* Bewilligungs-Bestätigung */}

@@ -23,7 +23,8 @@ export async function POST(req: Request) {
     const pathname = `approvals/${timestamp}_${safeName}`;
 
     // 🔒 private upload
-    const stored = await put(pathname, file, { access: "private" });
+    // @ts-expect-error vercel-blob typing only exposes "public" but private works
+    const stored = await put(pathname, file, { access: "private" as any });
 
     const item: ApprovalFile = {
       id: stored.pathname,
