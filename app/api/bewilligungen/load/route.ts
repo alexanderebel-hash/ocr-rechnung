@@ -84,6 +84,19 @@ export async function POST(req: Request) {
       }
     }
 
+    // --- Fallback: Zeitraum aus Dateinamen parsen, falls Header nichts liefern ---
+    try {
+      if (!periodFrom && !periodTo) {
+        const u = new URL(url);
+        const fname = decodeURIComponent(u.pathname.split("/").pop() || "");
+        const m = fname.match(/(\d{2}\.\d{2}\.\d{2,4})-(\d{2}\.\d{2}\.\d{2,4})/);
+        if (m) {
+          periodFrom = m[1];
+          periodTo = m[2];
+        }
+      }
+    } catch {}
+
     const parsed = await parseExcelBewilligung(buf);
     const lks = parsed.leistungen
       .map(toApprovalLK)
@@ -91,12 +104,7 @@ export async function POST(req: Request) {
 
     const approval: ApprovalPayload = {
       klientId: clientName ?? slugify(parsed.klient?.name) ?? null,
-      period:
-        periodFrom && periodTo
-          ? `${periodFrom}–${periodTo}`
-          : parsed.zeitraum?.von && parsed.zeitraum?.bis
-          ? `${parsed.zeitraum.von}..${parsed.zeitraum.bis}`
-          : null,
+      period: periodFrom && periodTo ? `${periodFrom}–${periodTo}` : null,
       lks,
     };
 
