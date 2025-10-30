@@ -1,160 +1,78 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import Anthropic from '@anthropic-ai/sdk';
+import { NextResponse } from "next/server";
+import { OCRResultSchema } from "@/lib/schemas";
+import { sanitizeOCRResult } from "@/lib/ocrSanitize";
 
-export const runtime = 'nodejs';
+const ALLOWED_CT = new Set(["application/pdf", "application/octet-stream"]);
+const MODEL = process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20240620";
+const API_KEY = process.env.ANTHROPIC_API_KEY;
+const API_URL = "https://api.anthropic.com/v1/messages";
 
-const MAX_FILE_BYTES = 32 * 1024 * 1024;
-const ALLOWED_TYPES = new Set(['application/pdf']);
+function toBase64(buf: ArrayBuffer) {
+  return Buffer.from(buf).toString("base64");
+}
+
+function buildPromptJSONOnly() {
+  return `Extract PDF billing data JSON ... (same schema as OCRResultSchema)`;
+}
+
+async function anthropicOCRFromPdfBase64(pdfB64: string, timeoutMs = 60000) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      signal: ctl.signal,
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": API_KEY || "",
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 2000,
+        temperature: 0,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "document",
+                source: {
+                  type: "base64",
+                  media_type: "application/pdf",
+                  data: pdfB64,
+                },
+              },
+              { type: "text", text: buildPromptJSONOnly() },
+            ],
+          },
+        ],
+      }),
+    });
+    const json = await res.json();
+    const text = json?.content?.[0]?.text || "";
+    return JSON.parse(text.match(/\{[\s\S]*\}$/)?.[0] || text);
+  } finally {
+    clearTimeout(t);
+  }
+}
 
 export async function POST(req: Request) {
   try {
-    const form = await req.formData();
-    const file = form.get('file') as File | null;
-    const type = String(form.get('type') || '').toLowerCase();
-
-    if (!file) {
-      return jsonError('Keine Datei übergeben.', 400);
-    }
-    if (!['bewilligung', 'rechnung'].includes(type)) {
-      return jsonError('Ungültiger "type". Erlaubt: "bewilligung" | "rechnung".', 400);
-    }
-    if (!ALLOWED_TYPES.has(file.type)) {
-      return jsonError(`Ungültiger Content-Type: ${file.type || 'unbekannt'}. Nur PDF erlaubt.`, 400);
-    }
-    if (file.size > MAX_FILE_BYTES) {
-      return jsonError(`PDF zu groß (${formatBytes(file.size)}). Maximal ${formatBytes(MAX_FILE_BYTES)}.`, 413);
-    }
-
-    const arrayBuf = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuf);
-    const pdfBase64 = buffer.toString('base64');
-
-    const approxPages = approxPdfPageCount(buffer);
-    if (approxPages && approxPages > 100) {
-      return jsonError(`PDF hat vermutlich ${approxPages} Seiten. Maximal 100 Seiten unterstützt.`, 413);
-    }
-
-    const prompt = type === 'bewilligung' ? buildBewilligungPrompt() : buildRechnungPrompt();
-
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return jsonError('Server-Fehler: ANTHROPIC_API_KEY nicht gesetzt.', 500);
-    }
-    const client = new Anthropic({ apiKey });
-
-    const message = await client.messages.create({
-      model: process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-5',
-      max_tokens: 2048,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'document',
-              source: {
-                type: 'base64',
-                media_type: 'application/pdf',
-                data: pdfBase64,
-              },
-            },
-            { type: 'text', text: prompt },
-          ],
-        },
-      ],
-    });
-
-    const outputText = (message.content ?? [])
-      .filter((p: any) => p?.type === 'text')
-      .map((p: any) => p.text)
-      .join('\n')
-      .trim();
-
-    const data = safeExtractJson(outputText);
-
-    return Response.json({
-      success: true,
-      meta: { approxPages },
-      data,
-      raw: outputText,
-    });
+    const form = await req.formData().catch(() => null);
+    const file = form?.get("file") as File | null;
+    const type = (file?.type || "").split(";")[0];
+    if (!file || !ALLOWED_CT.has(type)) throw new Error("PDF missing/invalid");
+    const buf = await file.arrayBuffer();
+    const raw = await anthropicOCRFromPdfBase64(toBase64(buf));
+    const clean = sanitizeOCRResult(raw);
+    const safe = OCRResultSchema.parse(clean);
+    const subtotal = safe.positions.reduce((s, p) => s + p.totalPrice, 0);
+    return NextResponse.json({ ok: true, ocr: safe, subtotal });
   } catch (err: any) {
-    const msg = err?.message || 'Unbekannter Serverfehler';
-    const code = asHttpStatus(err?.status) ?? 500;
-    return jsonError(`OCR-Processing fehlgeschlagen: ${msg}`, code, err);
-  }
-}
-
-function jsonError(message: string, status = 400, details?: any) {
-  return new Response(JSON.stringify({ success: false, error: message, details }), {
-    status,
-    headers: { 'content-type': 'application/json; charset=utf-8' },
-  });
-}
-
-function asHttpStatus(maybe: any): number | undefined {
-  if (typeof maybe === 'number' && maybe >= 400 && maybe <= 599) return maybe;
-  return undefined;
-}
-
-function formatBytes(n: number) {
-  if (n < 1024) return `${n} B`;
-  const kb = n / 1024;
-  if (kb < 1024) return `${kb.toFixed(1)} KB`;
-  const mb = kb / 1024;
-  return `${mb.toFixed(2)} MB`;
-}
-
-function approxPdfPageCount(buf: Buffer): number | null {
-  try {
-    const txt = buf.toString('latin1');
-    const m = txt.match(/\/Type\s*\/Page\b/g);
-    return m ? m.length : null;
-  } catch {
-    return null;
-  }
-}
-
-function buildBewilligungPrompt(): string {
-  return [
-    'Du bist ein präziser Extraktor. Lies das angehängte PDF (Pflegekassen-Bewilligung, DE).',
-    'Gib **ausschließlich** folgendes JSON zurück (keine Kommentare, kein Freitext):',
-    '{',
-    '  "klient": { "nachname": "", "vorname": "" },',
-    '  "zeitraum": { "von": "", "bis": "" },',
-    '  "leistungen": [',
-    '    { "leistungsart": "", "menge": "", "einheit": "" }',
-    '  ],',
-    '  "kasse": "",',
-    '  "versichertennummer": ""',
-    '}',
-  ].join('\n');
-}
-
-function buildRechnungPrompt(): string {
-  return [
-    'Du bist ein präziser Extraktor. Lies das angehängte PDF (Rechnung, DE).',
-    'Gib **ausschließlich** folgendes JSON zurück (keine Kommentare, kein Freitext):',
-    '{',
-    '  "rechnungsnummer": "",',
-    '  "rechnungsdatum": "",',
-    '  "klient": { "nachname": "", "vorname": "" },',
-    '  "positionen": [',
-    '    { "beschreibung": "", "menge": "", "einheit": "", "einzelpreis": "", "gesamt": "" }',
-    '  ],',
-    '  "summe_netto": "",',
-    '  "mwst": "",',
-    '  "summe_brutto": ""',
-    '}',
-  ].join('\n');
-}
-
-function safeExtractJson(text: string): any | null {
-  if (!text) return null;
-  const match = text.match(/\{[\s\S]*\}$/m);
-  if (!match) return null;
-  try {
-    return JSON.parse(match[0]);
-  } catch {
-    return null;
+    return NextResponse.json(
+      { ok: false, error: err?.message || "ocr failed" },
+      { status: 422 }
+    );
   }
 }
