@@ -1,51 +1,49 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
-import { buildBewilligungBlobPath, sanitizeBlobFileName } from '@/lib/blobUtils';
+import { NextResponse } from "next/server";
+import { put } from "@vercel/blob";
+import type { ApprovalFile } from "@/lib/approvalsTypes";
 
-export const runtime = 'edge';
+export const dynamic = "force-dynamic";
 
-export async function POST(request: NextRequest) {
+/**
+ * POST /api/upload-bewilligung
+ * Erwartet FormData mit "file" (Excel-Datei)
+ * Speichert privat im Blob, gibt signierte URL + Metadaten zurück
+ */
+export async function POST(req: Request) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-
+    const form = await req.formData();
+    const file = form.get("file") as File | null;
     if (!file) {
-      return NextResponse.json(
-        { error: 'Keine Datei hochgeladen' },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "no file" }, { status: 400 });
     }
 
-    const allowedTypes = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel'
-    ];
+    // Dateiname unter approvals/
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const safeName = file.name.replace(/\s+/g, "_");
+    const pathname = `approvals/${timestamp}_${safeName}`;
 
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: 'Nur Excel-Dateien (.xlsx, .xls) erlaubt' },
-        { status: 400 }
-      );
-    }
+    // 🔒 private upload
+    const stored = await put(pathname, file, { access: "private" });
 
-    const cleanFileName = sanitizeBlobFileName(file.name);
+    const item: ApprovalFile = {
+      id: stored.pathname,
+      name: safeName,
+      url:
+        typeof stored.url === "string"
+          ? stored.url
+          : new URL(stored.url).toString(),
+      size: stored.size,
+      uploadedAt:
+        stored.uploadedAt instanceof Date
+          ? stored.uploadedAt.toISOString()
+          : String(stored.uploadedAt),
+    };
 
-    const blob = await put(buildBewilligungBlobPath(file.name), file, {
-      access: 'public',
-      addRandomSuffix: false,
-    });
-
-    return NextResponse.json({
-      success: true,
-      url: blob.url,
-      fileName: cleanFileName,
-      size: file.size,
-    });
-
-  } catch (error) {
-    console.error('Upload Fehler:', error);
+    return NextResponse.json({ ok: true, item });
+  } catch (err: any) {
+    console.error("upload-bewilligung:", err);
     return NextResponse.json(
-      { error: 'Upload fehlgeschlagen' },
+      { ok: false, error: err?.message ?? "upload failed" },
       { status: 500 }
     );
   }
