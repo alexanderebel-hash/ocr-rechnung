@@ -7,18 +7,23 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const res = await list({ prefix: 'approvals/' });
-    const items: ApprovalFile[] = res.blobs
-      .filter(b => /\.xls$|\.xlsx$/i.test(b.pathname))
-      .map(b => ({
-        id: b.pathname,
-        name: b.pathname.replace(/^approvals\//, ''),
-        url: b.url,
-        size: b.size,
-        // 🔧 Date → string (ISO)
-        uploadedAt: b.uploadedAt instanceof Date
-          ? b.uploadedAt.toISOString()
-          : String(b.uploadedAt),
-      }));
+
+    const items = res.blobs
+      .filter((b) => /\.xls$|\.xlsx$/i.test(b.pathname))
+      .map<ApprovalFile>((b) => {
+        const uploadedAt =
+          typeof (b as any).uploadedAt === 'string'
+            ? (b as any).uploadedAt
+            : new Date((b as any).uploadedAt).toISOString();
+
+        return {
+          id: b.pathname,
+          name: b.pathname.replace(/^approvals\//, ''),
+          url: b.url,
+          size: b.size,
+          uploadedAt,
+        };
+      });
 
     return NextResponse.json({ ok: true, items });
   } catch (err: any) {
