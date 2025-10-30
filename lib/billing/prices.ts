@@ -1,4 +1,4 @@
-/* lib/billing/prices.ts */
+/* Central LK price table (EUR per unit) plus detailed tariff tables. */
 import type { PriceTable, AUBTable } from './calc';
 
 /**

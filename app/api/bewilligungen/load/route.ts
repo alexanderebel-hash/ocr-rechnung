@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import * as XLSX from "xlsx";
 import { parseExcelBewilligung } from "@/lib/excelParser";
 import type { ApprovalPayload, ApprovalLK } from "@/lib/approvalsTypes";
 
@@ -53,22 +54,54 @@ export async function POST(req: Request) {
     }
     const buf = await res.arrayBuffer();
 
+    const workbook = XLSX.read(buf);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const raw = XLSX.utils.sheet_to_json<any>(sheet, { defval: null });
+    void raw;
+
+    // --- Try to read first 10 header rows for client and period info ---
+    const metaRows = XLSX.utils
+      .sheet_to_json(sheet, { header: 1 })
+      .slice(0, 10) as any[][];
+    let clientName: string | null = null;
+    let periodFrom: string | null = null;
+    let periodTo: string | null = null;
+
+    for (const row of metaRows) {
+      if (!Array.isArray(row)) continue;
+      const joined = row.map((cell) => String(cell ?? "")).join(" ").toLowerCase();
+      if ((joined.includes("nachname") || joined.includes("klient")) && !clientName) {
+        const candidate = String(row[1] ?? row[0] ?? "").trim();
+        if (candidate) clientName = candidate;
+      }
+      if (joined.includes("von") && !periodFrom) {
+        const candidate = String(row[1] ?? row[0] ?? "").trim();
+        if (candidate) periodFrom = candidate;
+      }
+      if (joined.includes("bis") && !periodTo) {
+        const candidate = String(row[1] ?? row[0] ?? "").trim();
+        if (candidate) periodTo = candidate;
+      }
+    }
+
     const parsed = await parseExcelBewilligung(buf);
     const lks = parsed.leistungen
       .map(toApprovalLK)
       .filter(Boolean) as ApprovalLK[];
 
     const approval: ApprovalPayload = {
-      klientId: slugify(parsed.klient?.name),
+      klientId: clientName ?? slugify(parsed.klient?.name) ?? null,
       period:
-        parsed.zeitraum?.von && parsed.zeitraum?.bis
+        periodFrom && periodTo
+          ? `${periodFrom}–${periodTo}`
+          : parsed.zeitraum?.von && parsed.zeitraum?.bis
           ? `${parsed.zeitraum.von}..${parsed.zeitraum.bis}`
-          : undefined,
+          : null,
       lks,
     };
 
     const client = {
-      name: parsed.klient?.name ?? "",
+      name: clientName ?? parsed.klient?.name ?? "",
       pflegegrad: parsed.klient?.pflegegrad ?? null,
       adresse: parsed.klient?.adresse ?? "",
       pflegedienst: parsed.klient?.pflegedienst ?? "",
@@ -77,8 +110,8 @@ export async function POST(req: Request) {
     };
 
     const period = {
-      from: parsed.zeitraum?.von ?? "",
-      to: parsed.zeitraum?.bis ?? "",
+      from: periodFrom ?? parsed.zeitraum?.von ?? "",
+      to: periodTo ?? parsed.zeitraum?.bis ?? "",
     };
 
     return NextResponse.json({
