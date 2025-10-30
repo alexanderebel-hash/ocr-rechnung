@@ -146,6 +146,12 @@ export function computeCorrection(
   inv: Invoice,
   opt: ComputeOptions
 ): CalcResult {
+  if (!opt.month && bew.zeitraum?.von) {
+    const parts = String(bew.zeitraum.von).split('.');
+    const mPart = parts[1];
+    const yPart = parts[2];
+    if (mPart && yPart) opt.month = `${yPart}-${mPart}`;
+  }
   const zinv = nz(opt.zinvSatz ?? 0.0338);
   const budget = nz(opt.pflegekassenBudget ?? 0);
   const { y, m } = parseMonthOrFallback(bew, opt.month);

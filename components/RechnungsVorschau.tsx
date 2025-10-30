@@ -78,6 +78,17 @@ interface RechnungsVorschauProps {
       preis?: number | string | null;
       gesamt?: number | string | null;
     }> | null;
+    ocr?: {
+      positions?: Array<{
+        code?: string | null;
+        description?: string | null;
+        quantity?: number | string | null;
+        unitPrice?: number | string | null;
+        totalPrice?: number | string | null;
+      }> | null;
+      subtotal?: number | string | null;
+    } | null;
+    subtotal?: number | string | null;
     zwischensumme?: number | string | null;
     gesamtbetrag?: number | string | null;
     zinv?: number | string | null;
@@ -109,24 +120,38 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
     );
   }
 
-  const positionen = (rechnungsDaten?.positionen ?? []).map((pos, index) => {
-    const lkCodeRaw =
+  const rawPositions =
+    Array.isArray(rechnungsDaten?.ocr?.positions)
+      ? rechnungsDaten?.ocr?.positions ?? []
+      : rechnungsDaten?.positionen ?? [];
+
+  const positionen = (rawPositions as any[]).map((pos, index) => {
+    const lkCodeSource =
       typeof pos?.lkCode === 'string' && pos.lkCode.trim().length > 0
         ? pos.lkCode
+        : typeof pos?.code === 'string' && pos.code.trim().length > 0
+        ? pos.code
         : undefined;
-    const normalizedLkCode = lkCodeRaw ? normalizeLKCode(lkCodeRaw) : undefined;
+    const normalizedLkCode = lkCodeSource ? normalizeLKCode(lkCodeSource) : undefined;
 
     const bezeichnungRaw =
       typeof pos?.bezeichnung === 'string' && pos.bezeichnung.trim().length > 0
         ? pos.bezeichnung
+        : typeof pos?.description === 'string' && pos.description.trim().length > 0
+        ? pos.description
         : undefined;
 
-    const menge = toNumber(pos?.menge);
+    const menge = toNumber(
+      'quantity' in pos ? (pos as any).quantity : (pos as any)?.menge,
+    );
     const lkCode = normalizedLkCode ?? `Pos-${index + 1}`;
     const defaultPreis = LK_PREISE[lkCode]?.preis ?? 0;
-    const preis = toNumber(pos?.preis, defaultPreis);
+    const preis = toNumber(
+      'unitPrice' in pos ? (pos as any).unitPrice : (pos as any)?.preis,
+      defaultPreis,
+    );
     const gesamt = toNumber(
-      pos?.gesamt,
+      'totalPrice' in pos ? (pos as any).totalPrice : (pos as any)?.gesamt,
       Number.isFinite(menge * preis) ? menge * preis : menge * defaultPreis,
     );
     
@@ -145,14 +170,20 @@ export default function RechnungsVorschau({ rechnungsDaten, isLoading }: Rechnun
 
   const hatPositionen = positionen.length > 0;
   const invalidPositionen = positionen.filter((pos) => {
-    const validCode = /^LK\d{1,2}[A-Za-z]?$/.test(pos.lkCode) || pos.lkCode === 'AUB';
-    const validPreis = Number.isFinite(pos.preis) && (pos.preis > 0 || pos.lkCode === 'AUB');
+    const hasLookup = Object.prototype.hasOwnProperty.call(LK_PREISE, pos.lkCode);
+    const validCode =
+      /^LK\d{1,2}[A-Za-z]?$/.test(pos.lkCode) || pos.lkCode === 'AUB' || hasLookup;
+    const validPreis =
+      Number.isFinite(pos.preis) && (pos.preis > 0 || pos.lkCode === 'AUB' || hasLookup);
     return !validCode || !validPreis;
   });
   const berechneteZwischensumme = positionen.reduce((sum, pos) => sum + (Number.isFinite(pos.gesamt) ? pos.gesamt : 0), 0);
 
-  const reportedZwischensummeRaw = rechnungsDaten?.zwischensumme;
-  const zwischensumme = toNumber(rechnungsDaten?.zwischensumme);
+  const reportedZwischensummeRaw =
+    rechnungsDaten?.subtotal ??
+    rechnungsDaten?.ocr?.subtotal ??
+    rechnungsDaten?.zwischensumme;
+  const zwischensumme = toNumber(reportedZwischensummeRaw);
   const gesamtbetrag = toNumber(rechnungsDaten?.gesamtbetrag);
   const zinvValue =
     rechnungsDaten?.zinv === null || rechnungsDaten?.zinv === undefined

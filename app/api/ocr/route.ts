@@ -12,7 +12,20 @@ function toBase64(buf: ArrayBuffer) {
 }
 
 function buildPromptJSONOnly() {
-  return `Extract PDF billing data JSON ... (same schema as OCRResultSchema)`;
+  return `
+  Extract ONLY valid JSON.
+  Schema:
+  {
+    "invoiceNumber": "RG-2025-xxxx",
+    "period": {"from":"01.05.2025","to":"31.05.2025"},
+    "positions":[
+      {"code":"LK15","description":"Zubereitung kleine Mahlzeit","quantity":7,"unitPrice":7.44,"totalPrice":52.08}
+    ]
+  }
+  Notes:
+  - Each position MUST include code (LK..), quantity, unitPrice, totalPrice.
+  - If code cannot be read, omit the position.
+  Return pure JSON only.`.trim();
 }
 
 async function anthropicOCRFromPdfBase64(pdfB64: string, timeoutMs = 60000) {
