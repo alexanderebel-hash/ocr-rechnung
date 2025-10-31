@@ -1,26 +1,32 @@
-import type { ApprovalFile, ApprovalPayload } from '@/lib/approvalsTypes';
+import type { ApprovalFile, ApprovalPayload } from "@/lib/approvalsTypes";
 
+/**
+ * Holt die Liste aller Bewilligungen aus dem Blob-Storage
+ * (via /api/bewilligungen/list)
+ */
 export async function listApprovals(): Promise<ApprovalFile[]> {
-  const res = await fetch('/api/bewilligungen/list', { cache: 'no-store' });
-  if (!res.ok) throw new Error('listApprovals failed');
+  const res = await fetch("/api/bewilligungen/list", { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`listApprovals failed: ${res.status}`);
+  }
   const json = await res.json();
-  return (json.items ?? json.blobs ?? []) as ApprovalFile[];
+  return (json.items ?? []) as ApprovalFile[];
 }
 
-export async function loadApproval(pathname: string): Promise<ApprovalPayload> {
-  const res = await fetch(`/api/bewilligungen/load?file=${encodeURIComponent(pathname)}`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('loadApproval failed');
+/**
+ * Lädt eine spezifische Bewilligung per GET /api/bewilligungen/load?file=<pfad>
+ */
+export async function loadApproval(id: string): Promise<ApprovalPayload> {
+  const res = await fetch(
+    `/api/bewilligungen/load?file=${encodeURIComponent(id)}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) {
+    throw new Error(`loadApproval failed: ${res.status}`);
+  }
   const json = await res.json();
-  const payload: ApprovalPayload = {
-    klientId: json?.klientId ?? null,
-    period: json?.period ?? null,
-    lks: (json?.lks ?? json?.leistungen ?? []).map((x: any) => ({
-      code: String(x.code || '').toUpperCase().replace(/\s+/g, ''),
-      label: x.label ?? '',
-      approved: x.approved ?? x.genehmigt ?? (Number(x.qty) > 0),
-      freq: (x.freq ?? x.einheit ?? 'monthly').includes('Woche') ? 'weekly' : (x.freq ?? 'monthly'),
-      qty: Number(x.qty ?? x.menge ?? 0) || 0,
-    })),
-  };
-  return payload;
+  if (!json?.ok) {
+    throw new Error(json?.error || "unknown error");
+  }
+  return json.approval as ApprovalPayload;
 }
