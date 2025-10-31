@@ -8,7 +8,7 @@ export default function BewilligungDropdown({
   onLoaded,
   adminMode = false,
 }: {
-  onLoaded: (approval: ApprovalPayload) => void;
+  onLoaded: (approval: ApprovalPayload, file?: ApprovalFile) => void;
   adminMode?: boolean;
 }) {
   const [items, setItems] = useState<ApprovalFile[]>([]);
@@ -34,7 +34,8 @@ export default function BewilligungDropdown({
     try {
       const data = await loadApprovalFromApi(id);
       setApproval(data);
-      onLoaded(data);
+      const fileMeta = items.find((f) => f.id === id);
+      onLoaded(data, fileMeta);
     } catch (err) {
       console.error(err);
     } finally {
