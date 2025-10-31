@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import type { ApprovalFile, ApprovalPayload, ApprovalLK } from "@/lib/approvalsTypes";
+import { listApprovals, loadApproval as loadApprovalFromApi } from "@/lib/approvalsSource";
 
 export default function BewilligungDropdown({
   onLoaded,
@@ -11,36 +12,31 @@ export default function BewilligungDropdown({
   adminMode?: boolean;
 }) {
   const [items, setItems] = useState<ApprovalFile[]>([]);
-  const [selectedUrl, setSelectedUrl] = useState<string>("");
+  const [selectedId, setSelectedId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [approval, setApproval] = useState<ApprovalPayload | null>(null);
 
   // Liste laden
   useEffect(() => {
     (async () => {
-      const res = await fetch("/api/bewilligungen/list");
-      const json = await res.json();
-      if (json?.ok) setItems(json.items);
-      else console.error(json?.error);
+      try {
+        const files = await listApprovals();
+        setItems(files);
+      } catch (err) {
+        console.error(err);
+      }
     })();
   }, []);
 
   // Gewählte Datei laden (approved beibehalten!)
-  const loadApproval = async (url: string) => {
+  const fetchApproval = async (id: string) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/bewilligungen/load", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url }),
-      });
-      const json = await res.json();
-      if (json?.ok && json.approval) {
-        setApproval(json.approval);
-        onLoaded(json.approval);
-      } else {
-        console.error(json?.error);
-      }
+      const data = await loadApprovalFromApi(id);
+      setApproval(data);
+      onLoaded(data);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -63,16 +59,16 @@ export default function BewilligungDropdown({
       <div className="flex items-center gap-2">
         <select
           className="border rounded px-2 py-1 text-sm min-w-[280px]"
-          value={selectedUrl}
+          value={selectedId}
           onChange={(e) => {
-            const url = e.target.value;
-            setSelectedUrl(url);
-            if (url) loadApproval(url);
+            const id = e.target.value;
+            setSelectedId(id);
+            if (id) fetchApproval(id);
           }}
         >
           <option value="">– Bewilligung wählen –</option>
           {items.map((f) => (
-            <option key={f.id} value={f.url}>
+            <option key={f.id} value={f.id}>
               {f.name}
             </option>
           ))}

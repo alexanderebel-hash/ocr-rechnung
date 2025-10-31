@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
+import { getDownloadUrl } from "@vercel/blob";
 import { parseExcelBewilligung } from "@/lib/excelParser";
 import type { ApprovalPayload, ApprovalLK } from "@/lib/approvalsTypes";
 
@@ -36,19 +37,25 @@ function toApprovalLK(leistung: {
   };
 }
 
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   try {
-    const body = await req.json().catch(() => null);
-    const url = body?.url as string | undefined;
-
-    if (!url) {
-      return NextResponse.json(
-        { ok: false, error: "url missing" },
-        { status: 400 }
-      );
+    const { searchParams } = new URL(req.url);
+    const file = searchParams.get("file");
+    if (!file) {
+      return NextResponse.json({ error: "file missing" }, { status: 400 });
     }
 
-    const res = await fetch(url, { cache: "no-store" });
+    let downloadUrl: string | null = null;
+    try {
+      downloadUrl = await Promise.resolve(getDownloadUrl(file));
+    } catch {
+      downloadUrl = null;
+    }
+    if (!downloadUrl) {
+      return NextResponse.json({ error: "file not found" }, { status: 404 });
+    }
+
+    const res = await fetch(downloadUrl, { cache: "no-store" });
     if (!res.ok) {
       throw new Error(`download failed (${res.status})`);
     }
@@ -56,10 +63,7 @@ export async function POST(req: Request) {
 
     const workbook = XLSX.read(buf);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const raw = XLSX.utils.sheet_to_json<any>(sheet, { defval: null });
-    void raw;
 
-    // --- Try to read first 10 header rows for client and period info ---
     const metaRows = XLSX.utils
       .sheet_to_json(sheet, { header: 1 })
       .slice(0, 10) as any[][];
@@ -87,7 +91,7 @@ export async function POST(req: Request) {
     // --- Fallback: Zeitraum aus Dateinamen parsen, falls Header nichts liefern ---
     try {
       if (!periodFrom && !periodTo) {
-        const u = new URL(url);
+        const u = new URL(downloadUrl);
         const fname = decodeURIComponent(u.pathname.split("/").pop() || "");
         const m = fname.match(/(\d{2}\.\d{2}\.\d{2,4})-(\d{2}\.\d{2}\.\d{2,4})/);
         if (m) {
@@ -102,39 +106,26 @@ export async function POST(req: Request) {
       .map(toApprovalLK)
       .filter(Boolean) as ApprovalLK[];
 
-    const approval: ApprovalPayload = {
-      klientId: clientName ?? slugify(parsed.klient?.name) ?? null,
+    if (!clientName && parsed.klient?.name) {
+      clientName = parsed.klient.name;
+    }
+    if (!periodFrom && parsed.zeitraum?.von) {
+      periodFrom = parsed.zeitraum.von;
+    }
+    if (!periodTo && parsed.zeitraum?.bis) {
+      periodTo = parsed.zeitraum.bis;
+    }
+
+    const klientId = slugify(clientName ?? parsed.klient?.name) ?? null;
+    const payload: ApprovalPayload = {
+      klientId,
       period: periodFrom && periodTo ? `${periodFrom}–${periodTo}` : null,
       lks,
     };
 
-    const client = {
-      name: clientName ?? parsed.klient?.name ?? "",
-      pflegegrad: parsed.klient?.pflegegrad ?? null,
-      adresse: parsed.klient?.adresse ?? "",
-      pflegedienst: parsed.klient?.pflegedienst ?? "",
-      standort: parsed.klient?.standort ?? "",
-      stadtteil: parsed.klient?.stadtteil ?? "",
-    };
-
-    const period = {
-      from: periodFrom ?? parsed.zeitraum?.von ?? "",
-      to: periodTo ?? parsed.zeitraum?.bis ?? "",
-    };
-
-    return NextResponse.json({
-      ok: true,
-      approval,
-      meta: {
-        client,
-        period,
-      },
-    });
+    return NextResponse.json(payload);
   } catch (err: any) {
     console.error("bewilligungen/load:", err);
-    return NextResponse.json(
-      { ok: false, error: err?.message ?? "load failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err?.message ?? "load failed" }, { status: 500 });
   }
 }
